@@ -16,5 +16,5 @@ Link for the design report: https://docs.google.com/document/d/1-3tNeZSPBDZjYJSm
   - [How does LiDAR work?](http://www.lidar-uk.com/how-lidar-works/)
   - [Basics of USART Communication](http://www.circuitbasics.com/basics-uart-communication/)
   - [Atmega328p Datasheet](Datasheets/ATmega328-328P_Datasheet.pdf)
-  - [Atmega328p Pin Mapping](Atmega328pPinMap.png)
-  - [LIDAR Datasheet](LD108_SLAMTEC_rplidar_datasheet_A1M8_v1.0_en.pdf)
+  - [Atmega328p Pin Mapping](Datasheets/Atmega328pPinMap.png)
+  - [LIDAR Datasheet](Datasheets/LD108_SLAMTEC_rplidar_datasheet_A1M8_v1.0_en.pdf)
