@@ -5,7 +5,7 @@ __Status of Progress:__
 The project specifications are out.
 We should start to explore some useful contents and finish the design first.
 
-Link for the design report: https://docs.google.com/document/d/1-3tNeZSPBDZjYJSmUqFgw8rSJRnpJLUmch3Xru5feiM/edit?usp=sharing
+Link for the shared folder @ Google Drive: https://drive.google.com/open?id=1UU1Qphcf9j1svSrQOfUQ39ML7el3dNKC
 
 ----------
 
