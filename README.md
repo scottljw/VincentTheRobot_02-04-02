@@ -18,3 +18,5 @@ Link for the shared folder @ Google Drive: https://drive.google.com/open?id=1UU1
   - [Atmega328p Datasheet](Datasheets/ATmega328-328P_Datasheet.pdf)
   - [Atmega328p Pin Mapping](Datasheets/Atmega328pPinMap.png)
   - [LIDAR Datasheet](Datasheets/LD108_SLAMTEC_rplidar_datasheet_A1M8_v1.0_en.pdf)
+  - [Autonomous Search](Datasheets/autonomous%20systems%20for%20search%20and%20rescue.pdf)
+  - [SLAM](Datasheets/1aslam_blas_repo.pdf)
