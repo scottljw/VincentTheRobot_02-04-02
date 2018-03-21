@@ -292,7 +292,7 @@ int pwmVal(float speed)
   if(speed > 100.0)
     speed = 100.0;
 
-  return (int) (speed / 100.0) * 255.0;
+  return (int) ((speed/100.0) * 255.0);
 }
 
 // Move Vincent forward "dist" cm at speed "speed".
