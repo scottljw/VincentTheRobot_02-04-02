@@ -533,7 +533,7 @@ void handleCommand(TPacket *command)
 		sendStatus();
 		break;
 
-		case COMMAND_GET_STATS:
+		case COMMAND_CLEAR_STATS:
 		sendOK();
 		clearOneCounter(command->params[0]);
 		break;
