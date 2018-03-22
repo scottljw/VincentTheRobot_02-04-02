@@ -523,7 +523,7 @@ void handleCommand(TPacket *command)
 
 		case COMMAND_STOP:
 		sendOK();
-		stop((float) command->params[0], (float) command->params[1]);
+		stop();
 		break;
 
 
