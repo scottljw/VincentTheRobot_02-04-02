@@ -94,6 +94,23 @@ void sendStatus()
   // packetType and command files accordingly, then use sendResponse
   // to send out the packet. See sendMessage on how to use sendResponse.
   //
+
+	TPacket statusPacket;
+	statusPacket.packetType = PACKET_TYPE_RESPONSE;
+	statusPacket.command = RESP_STATUS;
+
+	statusPacket.params[0] = leftForwardTicks;
+	statusPacket.params[1] = rightForwardTicks;
+	statusPacket.params[2] = leftReverseTicks;
+	statusPacket.params[3] = rightReverseTicks;
+	statusPacket.params[4] = leftForwardTicksTurns;
+	statusPacket.params[5] = rightForwardTicksTurns;
+	statusPacket.params[6] = leftReverseTicksTurns;
+	statusPacket.params[7] = rightReverseTicksTurns;
+	statusPacket.params[8] = forwardDist;
+	statusPacket.params[9] = reverseDist;
+	
+	sendResponse(&statusPacket);
 }
 
 void sendMessage(const char *message)
