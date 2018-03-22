@@ -2,6 +2,16 @@
 #include "packet.h"
 #include "constants.h"
 
+typedef enum
+{
+  STOP=0,
+  FORWARD=1,
+  BACKWARD=2,
+  LEFT=3,
+  RIGHT=4
+} TDirection;
+volatile TDirection dir = STOP;
+
 /*
  * Vincent's configuration constants
  */
@@ -310,6 +320,8 @@ int pwmVal(float speed)
 // continue moving forward indefinitely.
 void forward(float dist, float speed)
 {
+  dir = FORWARD;
+ 
   int val = pwmVal(speed);
 
   // For now we will ignore dist and move
@@ -333,6 +345,7 @@ void forward(float dist, float speed)
 // continue reversing indefinitely.
 void reverse(float dist, float speed)
 {
+  dir = REVERSE;
 
   int val = pwmVal(speed);
 
@@ -356,6 +369,8 @@ void reverse(float dist, float speed)
 // turn left indefinitely.
 void left(float ang, float speed)
 {
+  dir = LEFT;
+ 
   int val = pwmVal(speed);
 
   // For now we will ignore ang. We will fix this in Week 9.
@@ -375,6 +390,8 @@ void left(float ang, float speed)
 // turn right indefinitely.
 void right(float ang, float speed)
 {
+  dir = RIGHT;
+ 
   int val = pwmVal(speed);
 
   // For now we will ignore ang. We will fix this in Week 9.
@@ -390,6 +407,8 @@ void right(float ang, float speed)
 // Stop Vincent. To replace with bare-metal code later.
 void stop()
 {
+  dir = STOP;
+ 
   analogWrite(LF, 0);
   analogWrite(LR, 0);
   analogWrite(RF, 0);
