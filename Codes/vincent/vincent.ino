@@ -29,9 +29,17 @@
  */
 
 // Store the ticks from Vincent's left and
-// right encoders.
-volatile unsigned long leftTicks; 
-volatile unsigned long rightTicks;
+// right encoders for moving forward and backwards.
+volatile unsigned long leftForwardTicks; 
+volatile unsigned long rightForwardTicks;
+volatile unsigned long leftReverseTicks;
+volatile unsigned long rightReverseTicks;
+
+// Left and right encoders ticks for turning
+volatile unsigned long leftForwardTicksTurns; 
+volatile unsigned long rightForwardTicksTurns;
+volatile unsigned long leftReverseTicksTurns;
+volatile unsigned long rightReverseTicksTurns;
 
 // Store the revolutions on Vincent's left
 // and right wheels
