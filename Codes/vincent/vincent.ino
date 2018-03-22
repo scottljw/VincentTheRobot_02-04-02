@@ -488,6 +488,26 @@ void handleCommand(TPacket *command)
      * Implement code for other commands here.
      * 
      */
+
+    case COMMAND_REVERSE:
+        sendOK();
+        reverse((float) command->params[0], (float) command->params[1]);
+      break;
+
+    case COMMAND_TURN_LEFT:
+        sendOK();
+        left((float) command->params[0], (float) command->params[1]);
+      break;
+
+    case COMMAND_TURN_RIGHT:
+        sendOK();
+        right((float) command->params[0], (float) command->params[1]);
+      break;
+
+    case COMMAND_STOP:
+        sendOK();
+        stop((float) command->params[0], (float) command->params[1]);
+      break;
         
     default:
       sendBadCommand();
