@@ -186,21 +186,27 @@ void enablePullups()
 }
 
 // Functions to be called by INT0 and INT1 ISRs.
+// we assume that when dir is FORWARD and dir is BACKWARD the number of clicks 
+// by the left and right encoders is similar, and we update forwardDist and reverseDist 
+// only in leftISR, and not in rightISR
 void leftISR()
 {
-  if (dir == FORWARD) 
+  if (dir == FORWARD) {
     leftForwardTicks++;
-  else if (dir == BACKWARD)
+    forwardDist = (unsigned long) ((float) leftForwardTicks / COUNTS_PER_REV * WHEEL_CIRC);
+  }
+  else if (dir == BACKWARD) {
     leftReverseTicks++;
-  else if (dir == LEFT)
+    reverseDist = (unsigned long) ((float) leftReverseTicks / COUNTS_PER_REV * WHEEL_CIRC);
+  }
+  else if (dir == LEFT) 
     leftReverseTicks++;
-  else if (dir == RIGHT)
+  else if (dir == RIGHT) 
     leftForwardTicks++;
 
 
-  leftTicks++;
-  Serial.print("LEFT: ");
-  Serial.println((float) leftTicks / COUNTS_PER_REV * WHEEL_CIRC);
+  //  Serial.print("LEFT: ");
+  //  Serial.println((float) leftTicks / COUNTS_PER_REV * WHEEL_CIRC);
 }
 
 void rightISR()
