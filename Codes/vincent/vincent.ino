@@ -200,9 +200,9 @@ void leftISR()
     reverseDist = (unsigned long) ((float) leftReverseTicks / COUNTS_PER_REV * WHEEL_CIRC);
   }
   else if (dir == LEFT) 
-    leftReverseTicks++;
+    leftReverseTicksTurns++;
   else if (dir == RIGHT) 
-    leftForwardTicks++;
+    leftForwardTicksTurns++;
 
 
   //  Serial.print("LEFT: ");
@@ -216,9 +216,9 @@ void rightISR()
   else if (dir == BACKWARD)
     rightReverseTicks++;
   else if (dir == LEFT)
-    rightForwardTicks++;
+    rightForwardTicksTurns++;
   else if (dir == RIGHT)
-    rightReverseTicks++;
+    rightReverseTicksTurns++;
 
   Serial.print("RIGHT: ");
   Serial.println((float) rightTicks / COUNTS_PER_REV * WHEEL_CIRC);
