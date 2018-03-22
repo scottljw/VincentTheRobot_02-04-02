@@ -1,6 +1,7 @@
 #include <serialize.h>
 #include "packet.h"
 #include "constants.h"
+#include <math.h>
 
 typedef enum
 {
@@ -34,9 +35,24 @@ volatile TDirection dir = STOP;
 #define RF                  10  // Right forward pin
 #define RR                  11  // Right reverse pin
 
+
 /*
  *    Vincent's State Variables
  */
+// PI, for calculating turn circumference
+#define PI 3.141592654
+
+// Vincent's length and breadth in cm
+#define VINCENT_LENGTH   16
+#define VINCENT_BREADTH  6
+
+// Vincent's diagonal. We compute and store this once
+// since it is expensive to compute and really doesn't change.
+float vincentDiagonal = 0.0;
+
+// Vincent's turning circumference, calculated once
+float vincentCirc = 0.0;
+
 
 // Store the ticks from Vincent's left and
 // right encoders for moving forward and backwards.
@@ -63,6 +79,8 @@ volatile unsigned long reverseDist;
 // Variables to keep track of whether we have moved a commanded distance
 unsigned long deltaDist;
 unsigned long newDist;
+unsigned long deltaTicks;
+unsigned long targetTicks;
 
 
 /*
@@ -603,7 +621,10 @@ void waitForHello()
 }
 
 void setup() {
-  // put your setup code here, to run once:
+  // Compute the diagonal
+  
+  vincentDiagonal = sqrt((VINCENT_LENGTH * VINCENT_LENGTH) + (VINCENT_BREADTH * VINCENT_BREADTH));
+  vincentCirc = PI * vincentDiagonal;
 
 	cli();
 	setupEINT();
