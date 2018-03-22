@@ -60,6 +60,10 @@ volatile unsigned long rightRevs;
 volatile unsigned long forwardDist;
 volatile unsigned long reverseDist;
 
+// Variables to keep track of whether we have moved a commanded distance
+unsigned long deltaDist;
+unsigned long newDist;
+
 
 /*
  * 
@@ -359,8 +363,17 @@ int pwmVal(float speed)
 // move forward at half speed.
 // Specifying a distance of 0 means Vincent will
 // continue moving forward indefinitely.
+
 void forward(float dist, float speed)
 {
+	// Code to tell us how far to move 
+  if (dist==0)
+    deltaDist = 999999;
+  else 
+    deltaDist = dist;
+
+  newDist = forwardDist + deltaDist;	
+	
 	dir = FORWARD;
 
 	int val = pwmVal(speed);
@@ -384,9 +397,18 @@ void forward(float dist, float speed)
 // reverse at half speed.
 // Specifying a distance of 0 means Vincent will
 // continue reversing indefinitely.
+
 void reverse(float dist, float speed)
 {
-	dir = BACKWARD;
+  // code to tell us how har to move
+  if(dist == 0)
+     deltaDist = 999999;
+   else
+     deltaDist = dist;
+
+    newDist = reverseDist + deltaDist;
+
+	  dir = BACKWARD;
 
 	int val = pwmVal(speed);
 
@@ -642,5 +664,25 @@ void loop() {
   		{
   			sendBadChecksum();
   		} 
+
+      if(deltaDist > 0)
+      {
+        if(dir == FORWARD)
+        {
+          if(forwardDist > newDist)
+          {
+              deltaDist = 0;
+              newDist = 0;
+              stop();
+          }
+        }
+        else
+             if(dir == STOP)
+             {
+                  deltaDist = 0;
+                  newDist = 0;
+                  stop();
+             }
+      }
 
   	}
