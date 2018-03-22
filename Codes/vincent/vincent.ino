@@ -109,7 +109,7 @@ void sendStatus()
 	statusPacket.params[7] = rightReverseTicksTurns;
 	statusPacket.params[8] = forwardDist;
 	statusPacket.params[9] = reverseDist;
-	
+
 	sendResponse(&statusPacket);
 }
 
@@ -524,6 +524,18 @@ void handleCommand(TPacket *command)
 		case COMMAND_STOP:
 		sendOK();
 		stop((float) command->params[0], (float) command->params[1]);
+		break;
+
+
+
+		case COMMAND_GET_STATS:
+		// sendOK();
+		sendStatus();
+		break;
+
+		case COMMAND_GET_STATS:
+		sendOK();
+		clearOneCounter(command->params[0]);
 		break;
 
 		default:
