@@ -369,7 +369,7 @@ void forward(float dist, float speed)
 // continue reversing indefinitely.
 void reverse(float dist, float speed)
 {
-  dir = REVERSE;
+  dir = BACKWARD;
 
   int val = pwmVal(speed);
 
