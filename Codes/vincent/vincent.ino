@@ -448,10 +448,33 @@ void reverse(float dist, float speed)
 // turn left at half speed.
 // Specifying an angle of 0 degrees will cause Vincent to
 // turn left indefinitely.
+
+unsigned long computeDeltaTicks(float ang)
+{
+  //we will assume that angular distance moved = linear distance moved in one wheel
+  //revolution. This is probably incorrect but simplifies calculation.
+  //# of wheel revs to make one full 360 turn is vincentCirc / WHEEL_CIRC
+  //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
+  //To convert to ticks, we multiply by COUNTS_PER_REV.
+
+ unsigned long ticks = (unsigned long)((ang * vincentCirc * COUNTS_PER_REV)/(360.0* WHEEL_CIRC));
+
+ return ticks;
+}
+
 void left(float ang, float speed)
 {
 	dir = LEFT;
 
+  if(ang == 0)
+  deltaTicks = 9999999;
+  else
+  {
+    deltaTicks = computeDeltaTicks(ang);
+  }
+
+  targetTicks = leftReverseTicksTurns + deltaTicks;
+  
 	int val = pwmVal(speed);
 
   // For now we will ignore ang. We will fix this in Week 9.
@@ -473,6 +496,15 @@ void right(float ang, float speed)
 {
 	dir = RIGHT;
 
+if(ang == 0)
+  deltaTicks = 9999999;
+  else
+  {
+    deltaTicks = computeDeltaTicks(ang);
+  }
+
+  targetTicks = rightReverseTicksTurns+deltaTicks;
+  
 	int val = pwmVal(speed);
 
   // For now we will ignore ang. We will fix this in Week 9.
@@ -705,5 +737,23 @@ void loop() {
                   stop();
              }
       }
+
+      if(deltaTicks>0)
+      {
+        if(dir==LEFT){
+          if(leftReverseTicksTurns>=targetTicks){
+            deltaTicks=0;
+            targetTicks=0;
+            stop();
+          }
+        }
+        else
+          if(dir==STOP)
+          {
+            deltaTicks=0;
+            targetTicks=0;
+            stop();
+          }
+        }
 
   	}
