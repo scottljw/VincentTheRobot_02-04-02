@@ -3,6 +3,10 @@
 #include "constants.h"
 #include <math.h>
 
+// Stack to store commands
+char command[1010];
+int command_idx = 0;
+
 typedef enum
 {
 	STOP=0,
@@ -570,6 +574,7 @@ void handleCommand(TPacket *command)
     // For movement commands, param[0] = distance, param[1] = speed.
 		case COMMAND_FORWARD:
 		sendOK();
+		command[command_idx++] = 'F';
 		forward((float) command->params[0], (float) command->params[1]);
 		break;
 
@@ -580,24 +585,32 @@ void handleCommand(TPacket *command)
 
 		case COMMAND_REVERSE:
 		sendOK();
+		command[command_idx++] = 'R';
 		reverse((float) command->params[0], (float) command->params[1]);
 		break;
 
 		case COMMAND_TURN_LEFT:
 		sendOK();
+		command[command_idx++] = 'L';
 		left((float) command->params[0], (float) command->params[1]);
 		break;
 
 		case COMMAND_TURN_RIGHT:
 		sendOK();
+		command[command_idx++] = 'R';
 		right((float) command->params[0], (float) command->params[1]);
 		break;
 
 		case COMMAND_STOP:
 		sendOK();
+		command[command_idx++] = 'S';
 		stop();
 		break;
 
+		case COMMAND_MARK_LOCATION:
+		sendOK();
+		command[command_idx++] = 'M';
+		break;
 
 
 		case COMMAND_GET_STATS:

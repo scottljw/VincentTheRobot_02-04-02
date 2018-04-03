@@ -11,6 +11,8 @@
 #define PORT_NAME			"/dev/ttyACM0"
 #define BAUD_RATE			B9600
 
+stack<char> command;
+
 int exitFlag=0;
 sem_t _xmitSema;
 
@@ -59,6 +61,8 @@ void handleResponse(TPacket *packet)
 		case RESP_STATUS:
 			handleStatus(packet);
 		break;
+
+		case RESP_
 
 		default:
 			printf("Arduino is confused\n");
@@ -227,6 +231,12 @@ void sendCommand(char command)
 			sendPacket(&commandPacket);
 			break;
 
+		// mark location
+		case 'm':
+		case 'M':
+			commandPacket.command = COMMAND_MARK_LOCATION;
+			sendPacket(&commandPacket);
+
 		case 'q':
 		case 'Q':
 			exitFlag=1;
@@ -269,6 +279,7 @@ int main()
 		flushInput();
 
 		sendCommand(ch);
+
 	}
 
 	printf("Closing connection to Arduino.\n");
