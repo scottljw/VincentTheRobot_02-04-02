@@ -4,7 +4,7 @@
 #include <math.h>
 
 // Stack to store commands
-char command[1010];
+char c_stack[1010];
 int command_idx = 0;
 
 typedef enum
@@ -570,7 +570,7 @@ void initializeState()
 /*
 void startBacktracking() {
 	while (command_idx > 0) {
-		switch(command[command_idx])
+		switch(c_stack[command_idx])
 		{
 			case 'F':
 			// move backwards
@@ -589,7 +589,7 @@ void handleCommand(TPacket *command)
     // For movement commands, param[0] = distance, param[1] = speed.
 		case COMMAND_FORWARD:
 		sendOK();
-		command[command_idx++] = 'F'; // need to push the parameters in also
+		c_stack[command_idx++] = 'F'; // need to push the parameters in also
 		forward((float) command->params[0], (float) command->params[1]);
 		break;
 
@@ -600,25 +600,25 @@ void handleCommand(TPacket *command)
 
 		case COMMAND_REVERSE:
 		sendOK();
-		command[command_idx++] = 'R';
+		c_stack[command_idx++] = 'R';
 		reverse((float) command->params[0], (float) command->params[1]);
 		break;
 
 		case COMMAND_TURN_LEFT:
 		sendOK();
-		command[command_idx++] = 'L';
+		c_stack[command_idx++] = 'L';
 		left((float) command->params[0], (float) command->params[1]);
 		break;
 
 		case COMMAND_TURN_RIGHT:
 		sendOK();
-		command[command_idx++] = 'R';
+		c_stack[command_idx++] = 'R';
 		right((float) command->params[0], (float) command->params[1]);
 		break;
 
 		case COMMAND_STOP:
 		sendOK();
-		command[command_idx++] = 'S';
+		c_stack[command_idx++] = 'S';
 		stop();
 		// poll for the "start backtracking command"
 		// startBacktracking();
@@ -626,7 +626,7 @@ void handleCommand(TPacket *command)
 
 		case COMMAND_MARK_LOCATION:
 		sendOK();
-		command[command_idx++] = 'M';
+		c_stack[command_idx++] = 'M';
 		break;
 
 
