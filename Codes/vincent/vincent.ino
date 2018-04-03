@@ -605,6 +605,7 @@ void handleCommand(TPacket *command)
 		sendOK();
 		command[command_idx++] = 'S';
 		stop();
+		// poll for the "start backtracking command"
 		break;
 
 		case COMMAND_MARK_LOCATION:
