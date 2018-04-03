@@ -567,6 +567,21 @@ void initializeState()
 	clearCounters();
 }
 
+/*
+void startBacktracking() {
+	while (command_idx > 0) {
+		switch(command[command_idx])
+		{
+			case 'F':
+			// move backwards
+		}
+
+
+		command_idx--;
+	}
+}
+*/
+
 void handleCommand(TPacket *command)
 {
 	switch(command->command)
@@ -574,7 +589,7 @@ void handleCommand(TPacket *command)
     // For movement commands, param[0] = distance, param[1] = speed.
 		case COMMAND_FORWARD:
 		sendOK();
-		command[command_idx++] = 'F';
+		command[command_idx++] = 'F'; // need to push the parameters in also
 		forward((float) command->params[0], (float) command->params[1]);
 		break;
 
@@ -606,6 +621,7 @@ void handleCommand(TPacket *command)
 		command[command_idx++] = 'S';
 		stop();
 		// poll for the "start backtracking command"
+		// startBacktracking();
 		break;
 
 		case COMMAND_MARK_LOCATION:
