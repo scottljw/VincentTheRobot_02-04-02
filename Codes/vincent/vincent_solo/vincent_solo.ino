@@ -30,6 +30,11 @@ volatile TDirection dir = STOP;
 #define RF                  10  // Right forward pin
 #define RR                  11  // Right reverse pin
 
+// Motor calibration constants
+#define LeftDeltaMultiplier 60
+#define RightDeltaMultiplier 80
+#define LFMultiplier 2.4
+#define LRMultiplier 2.45
 
 /*
  *    Vincent's State Variables
@@ -39,7 +44,7 @@ volatile TDirection dir = STOP;
 
 // Vincent's length and breadth in cm
 #define VINCENT_LENGTH   16
-#define VINCENT_BREADTH  6 // to be verify
+#define VINCENT_BREADTH  10
 
 // Vincent's diagonal. We compute and store this once
 // since it is expensive to compute and really doesn't change.
@@ -99,19 +104,19 @@ void enablePullups()
 // only in leftISR, and not in rightISR
 void leftISR()
 {
-  leftForwardTicks++;
-//  if (dir == FORWARD) {
-//    leftForwardTicks = leftForwardTicks + 1;
-//    forwardDist = (unsigned long) ((float) leftForwardTicks / COUNTS_PER_REV * WHEEL_CIRC);
-//  }
-//  else if (dir == BACKWARD) {
-//    leftReverseTicks = leftReverseTicks + 1;
-//    reverseDist = (unsigned long) ((float) leftReverseTicks / COUNTS_PER_REV * WHEEL_CIRC);
-//  }
-//  else if (dir == LEFT) 
-//    leftReverseTicksTurns = leftReverseTicksTurns + 1;
-//  else if (dir == RIGHT) 
-//    leftForwardTicksTurns = leftForwardTicksTurns + 1;
+//  leftForwardTicks++;
+  if (dir == FORWARD) {
+    leftForwardTicks = leftForwardTicks + 1;
+    forwardDist = (unsigned long) ((float) leftForwardTicks / COUNTS_PER_REV * WHEEL_CIRC);
+  }
+  else if (dir == BACKWARD) {
+    leftReverseTicks = leftReverseTicks + 1;
+    reverseDist = (unsigned long) ((float) leftReverseTicks / COUNTS_PER_REV * WHEEL_CIRC);
+  }
+  else if (dir == LEFT) 
+    leftReverseTicksTurns = leftReverseTicksTurns + 1;
+  else if (dir == RIGHT) 
+    leftForwardTicksTurns = leftForwardTicksTurns + 1;
 
 
   //  Serial.print("LEFT: ");
@@ -120,15 +125,15 @@ void leftISR()
 
 void rightISR()
 {
-  rightForwardTicks++;
-//  if (dir == FORWARD) 
-//    rightForwardTicks = rightForwardTicks + 1;
-//  else if (dir == BACKWARD)
-//    rightReverseTicks = rightReverseTicks + 1;
-//  else if (dir == LEFT)
-//    rightForwardTicksTurns = rightForwardTicksTurns + 1;
-//  else if (dir == RIGHT)
-//    rightReverseTicksTurns = rightReverseTicksTurns + 1;
+//  /rightForwardTicks++;
+  if (dir == FORWARD) 
+    rightForwardTicks = rightForwardTicks + 1;
+  else if (dir == BACKWARD)
+    rightReverseTicks = rightReverseTicks + 1;
+  else if (dir == LEFT)
+    rightForwardTicksTurns = rightForwardTicksTurns + 1;
+  else if (dir == RIGHT)
+    rightReverseTicksTurns = rightReverseTicksTurns + 1;
 
   // Serial.print("RIGHT: ");
   // Serial.println((float) rightTicks / COUNTS_PER_REV * WHEEL_CIRC);
@@ -218,7 +223,7 @@ void forward(float dist, float speed)
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
 
-  analogWrite(LF, val);
+  analogWrite(LF, (float)val*LFMultiplier);
   analogWrite(RF, val);
   analogWrite(LR,0);
   analogWrite(RR, 0);
@@ -251,13 +256,13 @@ void reverse(float dist, float speed)
   // LF = Left forward pin, LR = Left reverse pin
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
-  analogWrite(LR, val);
+  analogWrite(LR, (float)val*LRMultiplier);
   analogWrite(RR, val);
   analogWrite(LF, 0);
   analogWrite(RF, 0);
 }
 
-unsigned long computeDeltaTicks(float ang)
+unsigned long computeLeftDeltaTicks(float ang)
 {
   //we will assume that angular distance moved = linear distance moved in one wheel
   //revolution. This is probably incorrect but simplifies calculation.
@@ -265,7 +270,21 @@ unsigned long computeDeltaTicks(float ang)
   //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
   //To convert to ticks, we multiply by COUNTS_PER_REV.
 
- unsigned long ticks = (unsigned long)((ang * vincentCirc * 60)/(360.0* WHEEL_CIRC));
+ unsigned long ticks = (unsigned long)((ang * vincentCirc * LeftDeltaMultiplier)/(360.0* WHEEL_CIRC));
+
+ return ticks;
+}
+
+
+unsigned long computeRightDeltaTicks(float ang)
+{
+  //we will assume that angular distance moved = linear distance moved in one wheel
+  //revolution. This is probably incorrect but simplifies calculation.
+  //# of wheel revs to make one full 360 turn is vincentCirc / WHEEL_CIRC
+  //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
+  //To convert to ticks, we multiply by COUNTS_PER_REV.
+
+ unsigned long ticks = (unsigned long)((ang * vincentCirc * RightDeltaMultiplier)/(360.0* WHEEL_CIRC));
 
  return ticks;
 }
@@ -283,7 +302,7 @@ void left(float ang, float speed)
     deltaTicks = 9999999;
   else
   {
-    deltaTicks = computeDeltaTicks(ang);
+    deltaTicks = computeLeftDeltaTicks(ang);
   }
 
   targetTicks = leftReverseTicksTurns + deltaTicks;
@@ -313,7 +332,7 @@ if(ang == 0)
   deltaTicks = 9999999;
   else
   {
-    deltaTicks = computeDeltaTicks(ang);
+    deltaTicks = computeRightDeltaTicks(ang);
   }
 
   targetTicks = rightReverseTicksTurns + deltaTicks;
