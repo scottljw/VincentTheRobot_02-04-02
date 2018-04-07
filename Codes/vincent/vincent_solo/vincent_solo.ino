@@ -418,7 +418,44 @@ void setup() {
 
 void loop() {
   cmdFromPi();
-  comToAr();    
+  comToAr();
+  if(deltaDist > 0)
+      {
+        if(dir == FORWARD)
+        {
+          if(forwardDist > newDist)
+          {
+              deltaDist = 0;
+              newDist = 0;
+              stop();
+          }
+        }
+        else
+             if(dir == STOP)
+             {
+                  deltaDist = 0;
+                  newDist = 0;
+                  stop();
+             }
+      }
+
+      if(deltaTicks>0)
+      {
+        if(dir==LEFT){
+          if(leftReverseTicksTurns>=targetTicks){
+            deltaTicks=0;
+            targetTicks=0;
+            stop();
+          }
+        }
+        else
+          if(dir==STOP)
+          {
+            deltaTicks=0;
+            targetTicks=0;
+            stop();
+          }
+        }    
 }
 void cmdFromPi(){
         if (Serial.available() > 0) {
