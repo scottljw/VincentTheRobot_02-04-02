@@ -100,17 +100,17 @@ void enablePullups()
 void leftISR()
 {
   if (dir == FORWARD) {
-    leftForwardTicks++;
+    leftForwardTicks = leftForwardTicks + 1;
     forwardDist = (unsigned long) ((float) leftForwardTicks / COUNTS_PER_REV * WHEEL_CIRC);
   }
   else if (dir == BACKWARD) {
-    leftReverseTicks++;
+    leftReverseTicks = leftReverseTicks + 1;
     reverseDist = (unsigned long) ((float) leftReverseTicks / COUNTS_PER_REV * WHEEL_CIRC);
   }
   else if (dir == LEFT) 
-    leftReverseTicksTurns++;
+    leftReverseTicksTurns = leftReverseTicksTurns + 1;
   else if (dir == RIGHT) 
-    leftForwardTicksTurns++;
+    leftForwardTicksTurns = leftForwardTicksTurns + 1;
 
 
   //  Serial.print("LEFT: ");
@@ -120,13 +120,13 @@ void leftISR()
 void rightISR()
 {
   if (dir == FORWARD) 
-    rightForwardTicks++;
+    rightForwardTicks = rightForwardTicks + 1;
   else if (dir == BACKWARD)
-    rightReverseTicks++;
+    rightReverseTicks = rightReverseTicks + 1;
   else if (dir == LEFT)
-    rightForwardTicksTurns++;
+    rightForwardTicksTurns = rightForwardTicksTurns + 1;
   else if (dir == RIGHT)
-    rightReverseTicksTurns++;
+    rightReverseTicksTurns = rightReverseTicksTurns + 1;
 
   // Serial.print("RIGHT: ");
   // Serial.println((float) rightTicks / COUNTS_PER_REV * WHEEL_CIRC);
@@ -522,6 +522,7 @@ void comToAr(){
     }else if(cmd == "L" || cmd == "l"){
        left((float) dist, (float) speed);
     }
+    // todo : mark, clr
     flag = false;
   }
 }
