@@ -99,18 +99,19 @@ void enablePullups()
 // only in leftISR, and not in rightISR
 void leftISR()
 {
-  if (dir == FORWARD) {
-    leftForwardTicks = leftForwardTicks + 1;
-    forwardDist = (unsigned long) ((float) leftForwardTicks / COUNTS_PER_REV * WHEEL_CIRC);
-  }
-  else if (dir == BACKWARD) {
-    leftReverseTicks = leftReverseTicks + 1;
-    reverseDist = (unsigned long) ((float) leftReverseTicks / COUNTS_PER_REV * WHEEL_CIRC);
-  }
-  else if (dir == LEFT) 
-    leftReverseTicksTurns = leftReverseTicksTurns + 1;
-  else if (dir == RIGHT) 
-    leftForwardTicksTurns = leftForwardTicksTurns + 1;
+  leftForwardTicks++;
+//  if (dir == FORWARD) {
+//    leftForwardTicks = leftForwardTicks + 1;
+//    forwardDist = (unsigned long) ((float) leftForwardTicks / COUNTS_PER_REV * WHEEL_CIRC);
+//  }
+//  else if (dir == BACKWARD) {
+//    leftReverseTicks = leftReverseTicks + 1;
+//    reverseDist = (unsigned long) ((float) leftReverseTicks / COUNTS_PER_REV * WHEEL_CIRC);
+//  }
+//  else if (dir == LEFT) 
+//    leftReverseTicksTurns = leftReverseTicksTurns + 1;
+//  else if (dir == RIGHT) 
+//    leftForwardTicksTurns = leftForwardTicksTurns + 1;
 
 
   //  Serial.print("LEFT: ");
@@ -119,14 +120,15 @@ void leftISR()
 
 void rightISR()
 {
-  if (dir == FORWARD) 
-    rightForwardTicks = rightForwardTicks + 1;
-  else if (dir == BACKWARD)
-    rightReverseTicks = rightReverseTicks + 1;
-  else if (dir == LEFT)
-    rightForwardTicksTurns = rightForwardTicksTurns + 1;
-  else if (dir == RIGHT)
-    rightReverseTicksTurns = rightReverseTicksTurns + 1;
+  rightForwardTicks++;
+//  if (dir == FORWARD) 
+//    rightForwardTicks = rightForwardTicks + 1;
+//  else if (dir == BACKWARD)
+//    rightReverseTicks = rightReverseTicks + 1;
+//  else if (dir == LEFT)
+//    rightForwardTicksTurns = rightForwardTicksTurns + 1;
+//  else if (dir == RIGHT)
+//    rightReverseTicksTurns = rightReverseTicksTurns + 1;
 
   // Serial.print("RIGHT: ");
   // Serial.println((float) rightTicks / COUNTS_PER_REV * WHEEL_CIRC);
@@ -519,7 +521,7 @@ void comToAr(){
         reverse((float) dist, (float) speed);
     }else if(cmd == "R" || cmd == "r"){
         right((float) dist, (float) speed);
-    }else if(cmd == "L" || cmd == "l"){
+    } else if(cmd == "L" || cmd == "l"){
        left((float) dist, (float) speed);
     }
     // todo : mark, clr
