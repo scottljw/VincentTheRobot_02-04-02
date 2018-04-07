@@ -39,7 +39,7 @@ volatile TDirection dir = STOP;
 
 // Vincent's length and breadth in cm
 #define VINCENT_LENGTH   16
-#define VINCENT_BREADTH  6
+#define VINCENT_BREADTH  6 // to be verify
 
 // Vincent's diagonal. We compute and store this once
 // since it is expensive to compute and really doesn't change.
