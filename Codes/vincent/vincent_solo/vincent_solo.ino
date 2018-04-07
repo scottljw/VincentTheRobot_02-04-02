@@ -265,7 +265,7 @@ unsigned long computeDeltaTicks(float ang)
   //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
   //To convert to ticks, we multiply by COUNTS_PER_REV.
 
- unsigned long ticks = (unsigned long)((ang * vincentCirc * COUNTS_PER_REV)/(360.0* WHEEL_CIRC));
+ unsigned long ticks = (unsigned long)((ang * vincentCirc * 60)/(360.0* WHEEL_CIRC));
 
  return ticks;
 }
