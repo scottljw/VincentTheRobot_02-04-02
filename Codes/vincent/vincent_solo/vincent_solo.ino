@@ -429,6 +429,14 @@ void loop() {
               newDist = 0;
               stop();
           }
+        } else if(dir == BACKWARD)
+        {
+          if(reverseDist > newDist)
+          {
+              deltaDist = 0;
+              newDist = 0;
+              stop();
+          }
         }
         else
              if(dir == STOP)
@@ -443,6 +451,12 @@ void loop() {
       {
         if(dir==LEFT){
           if(leftReverseTicksTurns>=targetTicks){
+            deltaTicks=0;
+            targetTicks=0;
+            stop();
+          }
+        } else if(dir==RIGHT){
+          if(rightReverseTicksTurns>=targetTicks){
             deltaTicks=0;
             targetTicks=0;
             stop();
