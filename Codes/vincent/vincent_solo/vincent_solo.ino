@@ -402,7 +402,18 @@ bool flag = false;
 void setup() {
   Serial.begin(9600);
   // put your setup code here, to run once:
+  vincentDiagonal = sqrt((VINCENT_LENGTH * VINCENT_LENGTH) + (VINCENT_BREADTH * VINCENT_BREADTH));
+  vincentCirc = PI * vincentDiagonal;
 
+  cli();
+  setupEINT();
+  //setupSerial();
+  //startSerial();
+//  setupMotors();
+//  startMotors();
+  enablePullups();
+  initializeState();
+  sei();
 }
 
 void loop() {
