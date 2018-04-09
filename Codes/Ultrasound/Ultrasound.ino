@@ -1,21 +1,19 @@
-#define ULTRASOUND_Trig 12
-#define ULTRASOUND_Echo 11
+#define ULTRASOUND 8
 #define TIMEOUT 30000
 
 double echolocation() {
   double duration;
   double distance;
   
-  pinMode(ULTRASOUND_Trig, OUTPUT);
-  pinMode(ULTRASOUND_Echo, INPUT);
-  
-  digitalWrite(ULTRASOUND_Trig, LOW);
+  pinMode(ULTRASOUND, OUTPUT);
+  digitalWrite(ULTRASOUND, LOW);
   delayMicroseconds(10);
-  digitalWrite(ULTRASOUND_Trig, HIGH);
+  digitalWrite(ULTRASOUND, HIGH);
   delayMicroseconds(10);
-  digitalWrite(ULTRASOUND_Trig, LOW);
+  digitalWrite(ULTRASOUND, LOW);
   
-  duration = pulseIn(ULTRASOUND_Echo, HIGH, TIMEOUT);
+  pinMode(ULTRASOUND, INPUT);
+  duration = pulseIn(ULTRASOUND, HIGH, TIMEOUT);
   distance = duration / 2.0 * 0.034;
   
   //Serial.print("\n\nDistance to the front wall: ");
@@ -26,8 +24,14 @@ double echolocation() {
 double data_filter() {
   int i = 0;
   double sum = 0;
+  double temperary = echolocation();
   while (i < 10) {
-    sum += echolocation();
+    sum += temperary;
+    if (temperary - (sum / (i + 1)) > 1.0 || temperary - (sum / (i + 1)) < -1.0) {
+      i = 0;
+      sum = 0;
+      continue;
+    }
     i++;
   }
   return sum / 10;
