@@ -28,7 +28,7 @@ volatile TDirection dir = STOP;
 #define LF                  6   // Left forward pin
 #define LR                  5   // Left reverse pin
 #define RF                  10  // Right forward pin
-#define RR                  11  // Right reverse pin
+#define RR                  9   //11  // Right reverse pin
 
 // Motor calibration constants
 #define LeftDeltaMultiplier 60
