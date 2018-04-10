@@ -426,29 +426,29 @@ String cmd;
 int dist,speed;
 int cmdNo = 0;
 int k=0;
-void setup() {
-  Serial.begin(9600);
-  Wire.begin();
-  SDinit();
-   dist = 50;
-  speed = 70;
-}
+//void setup() {
+//  Serial.begin(9600);
+//  Wire.begin();
+//  SDinit();
+//   dist = 50;
+//  speed = 70;
+//}
 
-void loop() {
-  cmd = "s";
-  for(int i=0;i<5;i++){
-    cmdNo = cmdNo + 1;
-    SDwrite();
-    speed = speed + 1;
-    dist = dist + 1;
-  }
-  for(int i=0;i<5;i++){
-    SDread();
-  }
-  delay(10000); // millis
-  // put your main code here, to run repeatedly:
-
-}
+//void loop() {
+//  cmd = "s";
+//  for(int i=0;i<5;i++){
+//    cmdNo = cmdNo + 1;
+//    SDwrite();
+//    speed = speed + 1;
+//    dist = dist + 1;
+//  }
+//  for(int i=0;i<5;i++){
+//    SDread();
+//  }
+//  delay(10000); // millis
+//  // put your main code here, to run repeatedly:
+//
+//}
 
 void SDinit(){
   Serial.print("Initialising SD card...");
@@ -556,8 +556,8 @@ void SDread(){
 
 }
 
-String cmd;
-volatile int dist,speed;
+// String cmd;
+// volatile int dist, speed;
 bool flag = false;
 
 void setup() {
@@ -685,8 +685,8 @@ void comToAr(){
         right((float) dist, (float) speed);
     } else if(cmd == "L" || cmd == "l"){
        left((float) dist, (float) speed);
-    }
-    SDWrite(); // Save to file on SDCard
+    } // else if (cmd == "/") start backtracking
+    SDwrite(); // Save to file on SDCard
     // todo : mark, clr
     flag = false;
   }
