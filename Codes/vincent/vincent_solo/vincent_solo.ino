@@ -642,7 +642,7 @@ void cmdFromPi(){
                 String temp = incomingByte.substring(0,1);
                 Serial.println(temp);
                 cmd = temp;
-                if(temp == "S" || temp =="s" ||temp =="G" || temp =="g"){
+                if(temp == "S" || temp =="s" ||temp =="G" || temp =="g" || temp == "M" || temp == "m" || temp == "<" || temp == "<"){
                   return;
                 }
                 int j=2,k=2;
@@ -669,26 +669,35 @@ void cmdFromPi(){
         }
 
 }
-
+bool backtrack = false;
 void comToAr(){
-  if(flag == true){
-    if(cmd == "s" || cmd == "S"){
+  if (flag == true && backtrack == false) {
+    if (cmd == "s" || cmd == "S") {
         stop();
-    }else if(cmd == "G" || cmd == "g" ){
+    } else if (cmd == "G" || cmd == "g" ){
         sendStatus();
-    }else if(cmd == "F" || cmd == "f"){
+    } else if (cmd == "F" || cmd == "f"){
         forward((float) dist, (float) speed);
         
-    }else if(cmd == "B" || cmd == "b"){
+    } else if (cmd == "B" || cmd == "b"){
         reverse((float) dist, (float) speed);
-    }else if(cmd == "R" || cmd == "r"){
+    } else if (cmd == "R" || cmd == "r"){
         right((float) dist, (float) speed);
-    } else if(cmd == "L" || cmd == "l"){
+    } else if (cmd == "L" || cmd == "l"){
        left((float) dist, (float) speed);
-    } // else if (cmd == "/") start backtracking
+    } else if (cmd == "M" || cmd == "m"){
+        stop();
+        // blink LED 
+     } else if (cmd == "<") {
+        backtrack = true;
+      }
+    // else if (cmd == "/") start backtracking
     SDwrite(); // Save to file on SDCard
     // todo : mark, clr
     flag = false;
-  }
+  } else if (flag == true && backtrack == true) {
+      // backtrack
+      // read from file
+    }
 }
 
