@@ -1,8 +1,8 @@
-#define RAINDROP A3
+#define RAINDROP_AO A3
 
 int rain_detect() {
   pinMode(2, OUTPUT);
-  
+  int i = 0;
   int rain, sum = 0;
   while (i < 10) {
     rain = analogRead(RAINDROP_AO);
@@ -28,7 +28,7 @@ int rain_detect() {
 }
 
 int rain_print() {
-  int rain = rainDetect();
+  int rain = rain_detect();
   if(rain < 300) Serial.println("Heavy Rain");
   else if(rain < 500) Serial.println("Moderate Rain");
   else Serial.println("No Rain");
