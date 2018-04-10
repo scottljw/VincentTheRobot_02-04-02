@@ -1,7 +1,7 @@
 #define ULTRASOUND 8
 #define TIMEOUT 30000
 
-double echolocation() {
+double echo() {
   double duration;
   double distance;
   
@@ -21,10 +21,10 @@ double echolocation() {
   return distance;
 }
 
-double data_filter() {
+double echolocation() {
   int i = 0;
   double sum = 0;
-  double temperary = echolocation();
+  double temperary = echo();
   while (i < 10) {
     sum += temperary;
     if (temperary - (sum / (i + 1)) > 1.0 || temperary - (sum / (i + 1)) < -1.0) {
@@ -44,5 +44,5 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  Serial.println(data_filter());
+  Serial.println(echolocation());
 }
