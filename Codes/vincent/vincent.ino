@@ -33,7 +33,7 @@ volatile TDirection dir = STOP;
 #define LF                  6   // Left forward pin
 #define LR                  5   // Left reverse pin
 #define RF                  10  // Right forward pin
-#define RR                  11  // Right reverse pin
+#define RR                  9 // 11  // Right reverse pin
 
 
 /*
@@ -301,7 +301,7 @@ ISR(INT1_vect) {
 void setupSerial()
 {
   // To replace later with bare-metal.
-	Serial.begin(9600);
+	// Serial.begin(9600);
 }
 
 // Start the serial connection. For now we are using
@@ -660,10 +660,10 @@ void setup() {
 
 	cli();
 	setupEINT();
-	setupSerial();
-	startSerial();
-	setupMotors();
-	startMotors();
+//	setupSerial();
+//	startSerial();
+//	setupMotors();
+//	startMotors();
 	enablePullups();
 	initializeState();
 	sei();
