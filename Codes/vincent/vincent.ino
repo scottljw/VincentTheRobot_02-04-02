@@ -33,7 +33,13 @@ volatile TDirection dir = STOP;
 #define LF                  6   // Left forward pin
 #define LR                  5   // Left reverse pin
 #define RF                  10  // Right forward pin
-#define RR                  9 // 11  // Right reverse pin
+#define RR                  9  // 11 Right reverse pin
+
+// Motor calibration constants
+#define LeftDeltaMultiplier 60
+#define RightDeltaMultiplier 80
+#define LFMultiplier 2.4
+#define LRMultiplier 2.45
 
 
 /*
@@ -44,7 +50,7 @@ volatile TDirection dir = STOP;
 
 // Vincent's length and breadth in cm
 #define VINCENT_LENGTH   16
-#define VINCENT_BREADTH  6
+#define VINCENT_BREADTH  10
 
 // Vincent's diagonal. We compute and store this once
 // since it is expensive to compute and really doesn't change.
@@ -301,7 +307,7 @@ ISR(INT1_vect) {
 void setupSerial()
 {
   // To replace later with bare-metal.
-	// Serial.begin(9600);
+	Serial.begin(9600);
 }
 
 // Start the serial connection. For now we are using
@@ -404,7 +410,7 @@ void forward(float dist, float speed)
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
 
-	analogWrite(LF, val);
+	analogWrite(LF, val*LFMultiplier);
 	analogWrite(RF, val);
 	analogWrite(LR,0);
 	analogWrite(RR, 0);
@@ -419,14 +425,14 @@ void forward(float dist, float speed)
 void reverse(float dist, float speed)
 {
   // code to tell us how har to move
-  if(dist == 0)
+  if (dist == 0)
      deltaDist = 999999;
-   else
+  else
      deltaDist = dist;
 
-    newDist = reverseDist + deltaDist;
+  newDist = reverseDist + deltaDist;
 
-	  dir = BACKWARD;
+	dir = BACKWARD;
 
 	int val = pwmVal(speed);
 
@@ -437,7 +443,7 @@ void reverse(float dist, float speed)
   // LF = Left forward pin, LR = Left reverse pin
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
-	analogWrite(LR, val);
+	analogWrite(LR, val*LRMultiplier);
 	analogWrite(RR, val);
 	analogWrite(LF, 0);
 	analogWrite(RF, 0);
@@ -449,7 +455,7 @@ void reverse(float dist, float speed)
 // Specifying an angle of 0 degrees will cause Vincent to
 // turn left indefinitely.
 
-unsigned long computeDeltaTicks(float ang)
+unsigned long computeLeftDeltaTicks(float ang)
 {
   //we will assume that angular distance moved = linear distance moved in one wheel
   //revolution. This is probably incorrect but simplifies calculation.
@@ -457,7 +463,20 @@ unsigned long computeDeltaTicks(float ang)
   //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
   //To convert to ticks, we multiply by COUNTS_PER_REV.
 
- unsigned long ticks = (unsigned long)((ang * vincentCirc * COUNTS_PER_REV)/(360.0* WHEEL_CIRC));
+ unsigned long ticks = (unsigned long)((ang * vincentCirc * LeftDeltaMultiplier)/(360.0* WHEEL_CIRC));
+
+ return ticks;
+}
+
+unsigned long computeRightDeltaTicks(float ang)
+{
+  //we will assume that angular distance moved = linear distance moved in one wheel
+  //revolution. This is probably incorrect but simplifies calculation.
+  //# of wheel revs to make one full 360 turn is vincentCirc / WHEEL_CIRC
+  //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
+  //To convert to ticks, we multiply by COUNTS_PER_REV.
+
+ unsigned long ticks = (unsigned long)((ang * vincentCirc * RightDeltaMultiplier)/(360.0* WHEEL_CIRC));
 
  return ticks;
 }
@@ -466,11 +485,11 @@ void left(float ang, float speed)
 {
 	dir = LEFT;
 
-  if(ang == 0)
-  deltaTicks = 9999999;
+  if (ang == 0)
+    deltaTicks = 9999999;
   else
   {
-    deltaTicks = computeDeltaTicks(ang);
+    deltaTicks = computeLeftDeltaTicks(ang);
   }
 
   targetTicks = leftReverseTicksTurns + deltaTicks;
@@ -496,14 +515,14 @@ void right(float ang, float speed)
 {
 	dir = RIGHT;
 
-if(ang == 0)
-  deltaTicks = 9999999;
+  if (ang == 0)
+    deltaTicks = 9999999;
   else
   {
-    deltaTicks = computeDeltaTicks(ang);
+    deltaTicks = computeRightDeltaTicks(ang);
   }
 
-  targetTicks = rightReverseTicksTurns+deltaTicks;
+  targetTicks = rightReverseTicksTurns + deltaTicks;
   
 	int val = pwmVal(speed);
 
@@ -660,10 +679,10 @@ void setup() {
 
 	cli();
 	setupEINT();
-//	setupSerial();
-//	startSerial();
-//	setupMotors();
-//	startMotors();
+	setupSerial();
+	startSerial();
+	setupMotors();
+	startMotors();
 	enablePullups();
 	initializeState();
 	sei();
@@ -695,7 +714,7 @@ void loop() {
 
 // Uncomment the code below for Step 2 of Activity 3 in Week 8 Studio 2
 
-//	forward(0, 100);
+//  le/ft(0, 100);
 
 // Uncomment the code below for Week 9 Studio 2
 
@@ -706,54 +725,69 @@ void loop() {
   TResult result = readPacket(&recvPacket);
   
   if(result == PACKET_OK)
-  	handlePacket(&recvPacket);
-  else
-  	if(result == PACKET_BAD)
-  	{
-  		sendBadPacket();
-  	}
-  	else
-  		if(result == PACKET_CHECKSUM_BAD)
-  		{
-  			sendBadChecksum();
-  		} 
+    handlePacket(&recvPacket);
+  else if(result == PACKET_BAD)
+  {
+    sendBadPacket();
+  }
+  else if(result == PACKET_CHECKSUM_BAD)
+  {
+    sendBadChecksum();
+  } 
+  else {
 
-      if(deltaDist > 0)
+    if(deltaDist > 0)
+    {
+      if(dir == FORWARD)
       {
-        if(dir == FORWARD)
+        if(forwardDist > newDist)
         {
-          if(forwardDist > newDist)
-          {
-              deltaDist = 0;
-              newDist = 0;
-              stop();
-          }
+          deltaDist = 0;
+          newDist = 0;
+          stop();
         }
-        else
-             if(dir == STOP)
-             {
-                  deltaDist = 0;
-                  newDist = 0;
-                  stop();
-             }
       }
-
-      if(deltaTicks>0)
+      else if (dir == BACKWARD)
       {
-        if(dir==LEFT){
-          if(leftReverseTicksTurns>=targetTicks){
-            deltaTicks=0;
-            targetTicks=0;
-            stop();
-          }
+        if (reverseDist > newDist) {
+          deltaDist = 0;
+          newDist = 0;
+          stop();
         }
-        else
-          if(dir==STOP)
-          {
-            deltaTicks=0;
-            targetTicks=0;
-            stop();
-          }
-        }
+      }
+      else if(dir == STOP)
+      {
+        deltaDist = 0;
+        newDist = 0;
+        stop();
+      }
+    }
 
-  	}
+    if(deltaTicks > 0)
+    {
+      if (dir == LEFT)
+      {
+        if(leftReverseTicksTurns >= targetTicks){
+          deltaTicks=0;
+          targetTicks=0;
+          stop();
+        }
+      } 
+      else if (dir == RIGHT)
+      {
+        if(rightReverseTicksTurns >= targetTicks){
+          deltaTicks=0;
+          targetTicks=0;
+          stop();
+        }
+      }
+      else if(dir==STOP)
+      {
+        deltaTicks=0;
+        targetTicks=0;
+        stop();
+      }
+    }
+  }
+
+}
