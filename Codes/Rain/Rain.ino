@@ -1,7 +1,7 @@
 #define RAINDROP_AO A3
 
 int rain_detect() {
-  pinMode(2, OUTPUT);
+  pinMode(RAINDROP_AO, INPUT);
   int i = 0;
   int rain, sum = 0;
   while (i < 10) {
