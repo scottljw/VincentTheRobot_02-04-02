@@ -1,4 +1,4 @@
-#define ULTRASOUND 8
+#define ULTRASOUND 7
 #define TIMEOUT 30000
 
 double echo() {
