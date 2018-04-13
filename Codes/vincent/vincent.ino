@@ -88,6 +88,14 @@ unsigned long newDist;
 unsigned long deltaTicks;
 unsigned long targetTicks;
 
+// Boolean values for Ultrasound and IRs
+volatile int frontBlocked = 0;
+volatile int leftBlocked = 0;
+volatile int rightBlocked = 0;
+
+// TODO: Counter to insert delays between every commands during backtracking
+
+
 
 /*
  * 

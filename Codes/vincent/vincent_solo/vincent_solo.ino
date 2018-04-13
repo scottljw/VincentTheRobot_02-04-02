@@ -501,7 +501,7 @@ int comToInt(){
      return 5;
     }
 }
-void SDread(){
+void SDread() {
   int i=0;
   long value =0;
    byte readByte = 0;
@@ -698,6 +698,7 @@ void comToAr(){
   } else if (flag == true && backtrack == true) {
       // backtrack
       // read from file
+      SDread();
     }
 }
 
