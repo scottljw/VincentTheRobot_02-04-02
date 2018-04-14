@@ -248,7 +248,8 @@ void reverse(float dist, float speed)
 
     dir = BACKWARD;
 
-  int val = pwmVal(speed);
+//  int val = pwmVal(speed);
+  int left_val = pwmVal(60), right_val = pwmVal(90);
 
   // For now we will ignore dist and 
   // reverse indefinitely. We will fix this
@@ -257,8 +258,8 @@ void reverse(float dist, float speed)
   // LF = Left forward pin, LR = Left reverse pin
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
-  analogWrite(LR, (float)val*LRMultiplier);
-  analogWrite(RR, val);
+  analogWrite(LR, left_val);
+  analogWrite(RR, right_val);
   analogWrite(LF, 0);
   analogWrite(RF, 0);
 }
