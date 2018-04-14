@@ -27,7 +27,7 @@ volatile TDirection dir = STOP;
 // Vincent moves in the correct direction
 #define LF                  6   // Left forward pin
 #define LR                  5   // Left reverse pin
-#define RF                  10  // Right forward pin
+#define RF                  A0  // Right forward pin
 #define RR                  9   //11  // Right reverse pin
 
 // Motor calibration constants
@@ -213,7 +213,8 @@ void forward(float dist, float speed)
   
   dir = FORWARD;
 
-  int val = pwmVal(speed);
+//  int left_val = pwmVal(speed);
+  int left_val = pwmVal(100), right_val = pwmVal(60);
 
   // For now we will ignore dist and move
   // forward indefinitely. We will fix this
@@ -223,9 +224,9 @@ void forward(float dist, float speed)
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
 
-  analogWrite(LF, (float)val*LFMultiplier);
-  analogWrite(RF, val);
-  analogWrite(LR,0);
+  analogWrite(LF, left_val);
+  analogWrite(RF, right_val);
+  analogWrite(LR, 0);
   analogWrite(RR, 0);
 }
 
