@@ -119,6 +119,9 @@ void setup() {
   initializeState();
   sei();
   SDinit();
+  flag = true;
+  SDwrite();
+  flag = false;
 }
 
 void loop() {
@@ -179,20 +182,73 @@ void loop() {
           stop();
         }
       } 
-    } else 
+    } else // backtrack == true
     {
       Serial.println("ENter backtrack");
       SdLastPointer();
+      initializeState();
       Serial.println(cmdNo);
       while(cmdNo != 1){
-        if(millis() - time > 2000){
+        if(millis() - time > 10000){
           SDBack();
           comToAr();
+          if(deltaDist > 0)
+    {
+      if(dir == FORWARD)
+      {
+        if(forwardDist > newDist)
+        {
+          deltaDist = 0;
+          newDist = 0;
+          stop();
+        }
+      } else if(dir == BACKWARD)
+      {
+        if(reverseDist > newDist)
+        {
+          deltaDist = 0;
+          newDist = 0;
+          stop();
+        }
+      }
+      else
+       if(dir == STOP)
+       {
+        deltaDist = 0;
+        newDist = 0;
+        stop();
+      }
+    }
+
+    if(deltaTicks>0)
+    {
+      if(dir==LEFT){
+        if(leftReverseTicksTurns>=targetTicks){
+          deltaTicks=0;
+          targetTicks=0;
+          stop();
+        }
+      } else if(dir==RIGHT){
+        if(rightReverseTicksTurns>=targetTicks){
+          deltaTicks=0;
+          targetTicks=0;
+          stop();
+        }
+      }
+      else
+        if(dir==STOP)
+        {
+          deltaTicks=0;
+          targetTicks=0;
+          stop();
+        }
+      } 
           time = millis();
         }
       }
       if(cmdNo == 1){
         Serial.println("FINISH");
+        stop();
         delay(1000000);
       }
 //      delay(1000);
@@ -599,6 +655,25 @@ int comToInt() {
  }
 }
 
+String intToCom(int cmd_int) {
+  if (cmd_int == 1) {
+    return "S";
+    } else if (cmd_int == 2) {
+      return "F";
+    } else if (cmd_int == 3) {
+      return "B";
+    } else if (cmd_int == 4) { // swap L and R
+      return "L";
+    } else if (cmd_int == 5) {
+      return "R";
+    } else if (cmd_int == 1000) {
+      return "<";
+    } else if (cmd_int == 1001) {
+      return "M";
+    }
+      
+}
+
 void SDread() {
   int i = 0;
   long value = 0;
@@ -685,17 +760,18 @@ void SdLastPointer(){
   pointer = pointer - 1;
 //  Serial.print("pointer is: "); Serial.println(pointer);
 //  Serial.print("value at pointer is: "); Serial.println(completeData.charAt(pointer));
-  
+
 }
-void SDBack(){
+void SDBack() {
   int i=0;
   int value =0;
   byte readByte = 0;
   String temp;
+  int cmd_int;
   flag = true;
-  while(i!=4){
+  while (i != 4) {
     int j = pointer;
-    while(1){
+    while (1) {
       if(completeData.charAt(j) == ',' || completeData.charAt(j) == '\n'){
         break;
       }
@@ -710,7 +786,7 @@ void SDBack(){
       dist = value;
     }
     if(i == 2){
-      cmd = value;
+      cmd_int = value;
     }
     if(i == 3){
       cmdNo = (int)value;
@@ -720,6 +796,7 @@ void SDBack(){
 //    Serial.print("pointer after a loop is: "); Serial.println(pointer);
 //  Serial.print("value at pointer is: "); Serial.println(completeData.charAt(pointer));
   }
+  cmd = intToCom(cmd_int);
   Serial.print(cmdNo);
   Serial.print(", ");
   Serial.print(cmd);
@@ -770,7 +847,7 @@ void cmdFromPi(){
 }
 
 void comToAr(){
-  if (flag == true && backtrack == false) {
+  if (flag == true) { //  && backtrack == false
     if (cmd == "s" || cmd == "S") {
       stop();
     } else if (cmd == "G" || cmd == "g" ){
@@ -788,7 +865,8 @@ void comToAr(){
     stop();
         // blink LED 
   }
-    SDwrite(); // Save to file on SDCard
+    Serial.println("hi");
+    // SDwrite(); // Save to file on SDCard
     // todo : mark, clr
     flag = false;
 
