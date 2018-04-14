@@ -28,6 +28,9 @@ volatile TDirection dir = STOP;
 
 #define WHEEL_CIRC          20.42
 
+// Ultrasound pins
+// left is 4, right is 7
+
 // Motor control pins. You need to adjust these till
 // Vincent moves in the correct direction
 #define LF                  6   // Left forward pin
@@ -96,6 +99,7 @@ int k=0;
 int pointer;
 bool backtrack = false;
 bool flag = false;
+unsigned long long time = 0;
 
 // setup() and loop()
 void setup() {
@@ -114,7 +118,7 @@ void setup() {
   enablePullups();
   initializeState();
   sei();
-//  SDinit();
+  SDinit();
 }
 
 void loop() {
@@ -123,7 +127,6 @@ void loop() {
   if (backtrack == false) {
     cmdFromPi();
     SDwrite();
-    flag = false;
     comToAr();
     if(deltaDist > 0)
     {
@@ -182,16 +185,17 @@ void loop() {
       SdLastPointer();
       Serial.println(cmdNo);
       while(cmdNo != 1){
-
-        SDBack();
-        delay(1000);
-        comToAr();
+        if(millis() - time > 2000){
+          SDBack();
+          comToAr();
+          time = millis();
+        }
       }
       if(cmdNo == 1){
         Serial.println("FINISH");
         delay(1000000);
       }
-      delay(1000);
+//      delay(1000);
     }
   }
 
@@ -203,21 +207,21 @@ void loop() {
  * 
  */
 // Enable pull up resistors on pins 2 and 3
-  void enablePullups()
-  {
+void enablePullups()
+{
   // Use bare-metal to enable the pull-up resistors on pins
   // 2 and 3. These are pins PD2 and PD3 respectively.
   // We set bits 2 and 3 in DDRD to 0 to make them inputs. 
     DDRD &= 0b11110011;
     PIND |= 0b00001100;
-  }
+}
 
 // Functions to be called by INT0 and INT1 ISRs.
 // we assume that when dir is FORWARD and dir is BACKWARD the number of clicks 
 // by the left and right encoders is similar, and we update forwardDist and reverseDist 
 // only in leftISR, and not in rightISR
-  void leftISR()
-  {
+void leftISR()
+{
 //  leftForwardTicks++;
     if (dir == FORWARD) {
       leftForwardTicks = leftForwardTicks + 1;
@@ -235,10 +239,10 @@ void loop() {
 
   //  Serial.print("LEFT: ");
   //  Serial.println((float) leftTicks / COUNTS_PER_REV * WHEEL_CIRC);
-  }
+}
 
-  void rightISR()
-  {
+void rightISR()
+{
 //  /rightForwardTicks++;
     if (dir == FORWARD) 
       rightForwardTicks = rightForwardTicks + 1;
@@ -251,12 +255,12 @@ void loop() {
 
   // Serial.print("RIGHT: ");
   // Serial.println((float) rightTicks / COUNTS_PER_REV * WHEEL_CIRC);
-  }
+}
 
 // Set up the external interrupt pins INT0 and INT1
 // for falling edge triggered. Use bare-metal.
-  void setupEINT()
-  {
+void setupEINT()
+{
   // Use bare-metal to configure pins 2 and 3 to be
   // falling edge triggered. Remember to enable
   // the INT0 and INT1 interrupts.
@@ -264,50 +268,50 @@ void loop() {
     EICRA |= 0b00001010;
     EIMSK |= 0b00000011;
     sei();
-  }
+}
 
 // Implement the external interrupt ISRs below.
 // INT0 ISR should call leftISR while INT1 ISR
 // should call rightISR.
-  ISR(INT0_vect) {
-    leftISR();
-  }
+ISR(INT0_vect) {
+  leftISR();
+}
 
-  ISR(INT1_vect) {
-    rightISR();
-  }
+ISR(INT1_vect) {
+  rightISR();
+}
 
 // Set up the serial connection. For now we are using 
 // Arduino Wiring, you will replace this later
 // with bare-metal code.
-  void setupSerial()
-  {
-  // To replace later with bare-metal.
+void setupSerial()
+{
+// To replace later with bare-metal.
 //  Serial.begin(9600); // alr called in loop
-  }
+}
 
 // Start the serial connection. For now we are using
 // Arduino wiring and this function is empty. We will
 // replace this later with bare-metal code.
 
-  void startSerial()
-  {
-  // Empty for now. To be replaced with bare-metal code
-  // later on.
+void startSerial()
+{
+// Empty for now. To be replaced with bare-metal code
+// later on.
 
-  }
+}
 
 // Convert percentages to PWM values
-  int pwmVal(float speed)
-  {
-    if(speed < 0.0)
-      speed = 0;
+int pwmVal(float speed)
+{
+  if(speed < 0.0)
+    speed = 0;
 
-    if(speed > 100.0)
-      speed = 100.0;
+  if(speed > 100.0)
+    speed = 100.0;
 
-    return (int) ((speed/100.0) * 255.0);
-  }
+  return (int) ((speed/100.0) * 255.0);
+}
 
 // Move Vincent forward "dist" cm at speed "speed".
 // "speed" is expressed as a percentage. E.g. 50 is
@@ -315,34 +319,34 @@ void loop() {
 // Specifying a distance of 0 means Vincent will
 // continue moving forward indefinitely.
 
-  void forward(float dist, float speed)
-  {
-  // Code to tell us how far to move 
-    if (dist==0)
-      deltaDist = 999999;
-    else 
-      deltaDist = dist;
+void forward(float dist, float speed)
+{
+// Code to tell us how far to move 
+  if (dist==0)
+    deltaDist = 999999;
+  else 
+    deltaDist = dist;
 
-    newDist = forwardDist + deltaDist;  
+  newDist = forwardDist + deltaDist;  
 
-    dir = FORWARD;
+  dir = FORWARD;
 
 //  int left_val = pwmVal(speed);
-    int left_val = pwmVal(100), right_val = pwmVal(60);
+  int left_val = pwmVal(100), right_val = pwmVal(60);
 
-  // For now we will ignore dist and move
-  // forward indefinitely. We will fix this
-  // in Week 9.
+// For now we will ignore dist and move
+// forward indefinitely. We will fix this
+// in Week 9.
 
-  // LF = Left forward pin, LR = Left reverse pin
-  // RF = Right forward pin, RR = Right reverse pin
-  // This will be replaced later with bare-metal code.
+// LF = Left forward pin, LR = Left reverse pin
+// RF = Right forward pin, RR = Right reverse pin
+// This will be replaced later with bare-metal code.
 
-    analogWrite(LF, left_val);
-    analogWrite(RF, right_val);
-    analogWrite(LR, 0);
-    analogWrite(RR, 0);
-  }
+  analogWrite(LF, left_val);
+  analogWrite(RF, right_val);
+  analogWrite(LR, 0);
+  analogWrite(RR, 0);
+}
 
 // Reverse Vincent "dist" cm at speed "speed".
 // "speed" is expressed as a percentage. E.g. 50 is
@@ -350,81 +354,81 @@ void loop() {
 // Specifying a distance of 0 means Vincent will
 // continue reversing indefinitely.
 
-  void reverse(float dist, float speed)
-  {
-  // code to tell us how har to move
-    if(dist == 0)
-     deltaDist = 999999;
-   else
-     deltaDist = dist;
+void reverse(float dist, float speed)
+{
+// code to tell us how har to move
+  if(dist == 0)
+   deltaDist = 999999;
+ else
+   deltaDist = dist;
 
-   newDist = reverseDist + deltaDist;
+ newDist = reverseDist + deltaDist;
 
-   dir = BACKWARD;
+ dir = BACKWARD;
 
 //  int val = pwmVal(speed);
-   int left_val = pwmVal(60), right_val = pwmVal(90);
+ int left_val = pwmVal(60), right_val = pwmVal(90);
 
-  // For now we will ignore dist and 
-  // reverse indefinitely. We will fix this
-  // in Week 9.
+// For now we will ignore dist and 
+// reverse indefinitely. We will fix this
+// in Week 9.
 
-  // LF = Left forward pin, LR = Left reverse pin
-  // RF = Right forward pin, RR = Right reverse pin
-  // This will be replaced later with bare-metal code.
-   analogWrite(LR, left_val);
-   analogWrite(RR, right_val);
-   analogWrite(LF, 0);
-   analogWrite(RF, 0);
- }
+// LF = Left forward pin, LR = Left reverse pin
+// RF = Right forward pin, RR = Right reverse pin
+// This will be replaced later with bare-metal code.
+ analogWrite(LR, left_val);
+ analogWrite(RR, right_val);
+ analogWrite(LF, 0);
+ analogWrite(RF, 0);
+}
 
- unsigned long computeLeftDeltaTicks(float ang)
- {
-  //we will assume that angular distance moved = linear distance moved in one wheel
-  //revolution. This is probably incorrect but simplifies calculation.
-  //# of wheel revs to make one full 360 turn is vincentCirc / WHEEL_CIRC
-  //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
-  //To convert to ticks, we multiply by COUNTS_PER_REV.
+unsigned long computeLeftDeltaTicks(float ang)
+{
+//we will assume that angular distance moved = linear distance moved in one wheel
+//revolution. This is probably incorrect but simplifies calculation.
+//# of wheel revs to make one full 360 turn is vincentCirc / WHEEL_CIRC
+//This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
+//To convert to ticks, we multiply by COUNTS_PER_REV.
 
-   unsigned long ticks = (unsigned long)((ang * vincentCirc * LeftDeltaMultiplier)/(360.0* WHEEL_CIRC));
+ unsigned long ticks = (unsigned long)((ang * vincentCirc * LeftDeltaMultiplier)/(360.0* WHEEL_CIRC));
 
-   return ticks;
- }
+ return ticks;
+}
 
 
- unsigned long computeRightDeltaTicks(float ang)
- {
-  //we will assume that angular distance moved = linear distance moved in one wheel
-  //revolution. This is probably incorrect but simplifies calculation.
-  //# of wheel revs to make one full 360 turn is vincentCirc / WHEEL_CIRC
-  //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
-  //To convert to ticks, we multiply by COUNTS_PER_REV.
+unsigned long computeRightDeltaTicks(float ang)
+{
+//we will assume that angular distance moved = linear distance moved in one wheel
+//revolution. This is probably incorrect but simplifies calculation.
+//# of wheel revs to make one full 360 turn is vincentCirc / WHEEL_CIRC
+//This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
+//To convert to ticks, we multiply by COUNTS_PER_REV.
 
-   unsigned long ticks = (unsigned long)((ang * vincentCirc * RightDeltaMultiplier)/(360.0* WHEEL_CIRC));
+ unsigned long ticks = (unsigned long)((ang * vincentCirc * RightDeltaMultiplier)/(360.0* WHEEL_CIRC));
 
-   return ticks;
- }
+ return ticks;
+}
 
 // Turn Vincent left "ang" degrees at speed "speed".
 // "speed" is expressed as a percentage. E.g. 50 is
 // turn left at half speed.
 // Specifying an angle of 0 degrees will cause Vincent to
 // turn left indefinitely.
- void left(float ang, float speed)
- {
+void left(float ang, float speed)
+{
   dir = LEFT;
-
+  
   if(ang == 0)
     deltaTicks = 9999999;
   else
   {
     deltaTicks = computeLeftDeltaTicks(ang);
   }
-
+  
   targetTicks = leftReverseTicksTurns + deltaTicks;
   
   int val = pwmVal(speed);
-
+  
   // For now we will ignore ang. We will fix this in Week 9.
   // We will also replace this code with bare-metal later.
   // To turn left we reverse the left wheel and move
@@ -556,6 +560,7 @@ void SDinit(){
   }
   dataFile.close();
 }
+
 void SDwrite(){
   if(flag == false){
     return;
@@ -575,38 +580,40 @@ void SDwrite(){
   //Serial.print("Seconds is :");
   //Serial.println(cmdNo);
 }
-int comToInt(){
-  if(cmd == "s" || cmd == "S"){
+
+int comToInt() {
+  if (cmd == "s" || cmd == "S") {
    return 1; 
- }else if(cmd == "F" || cmd == "f"){
+ } else if (cmd == "F" || cmd == "f") {
    return 2;   
- }else if(cmd == "B" || cmd == "b"){
+ } else if (cmd == "B" || cmd == "b") {
    return 3;   
- }else if(cmd == "R" || cmd == "r"){
+ } else if (cmd == "R" || cmd == "r") {
    return 4;    
- }else if(cmd == "L" || cmd == "l"){
+ } else if (cmd == "L" || cmd == "l") {
    return 5;
- }else if(cmd == "<"){
+ } else if (cmd == "<") {
   return 1000;
-}else if(cmd == "M" || cmd == "m"){
+ } else if (cmd == "M" || cmd == "m") {
   return 1001;
+ }
 }
-}
-void SDread(){
-  int i=0;
-  long value =0;
+
+void SDread() {
+  int i = 0;
+  long value = 0;
   byte readByte = 0;
   completeData = "";
   File dataFile = SD.open(FILE, FILE_READ);
-  if (dataFile){   
-        // File available, read file until no data available
-    while(dataFile.available()) {
+  if (dataFile) {   
+    // File available, read file until no data available
+    while (dataFile.available()) {
       readByte = dataFile.read();
       completeData += (char)readByte;
     }
     dataFile.close();
   }
-  while(i !=4){
+  while (i != 4) {
     String temp;
     int j=k;
     while(1){
