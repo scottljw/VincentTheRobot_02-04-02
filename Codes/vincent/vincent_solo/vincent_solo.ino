@@ -39,9 +39,9 @@ volatile TDirection dir = STOP;
 #define RR                  9   //11  // Right reverse pin
 
 // Motor calibration constants
-#define LeftDeltaMultiplier 60
-#define RightDeltaMultiplier 80
-#define LFMultiplier 2.4
+#define LeftDeltaMultiplier 0.60
+#define RightDeltaMultiplier 0.80
+#define LFMultiplier 2.45
 #define LRMultiplier 2.45
 
 /*
@@ -165,8 +165,8 @@ void motor_control() {
   if (deltaDist > 0) {
     if (dir == FORWARD)
     {
-      Serial.print("forward dist is : "); Serial.println(forwardDist);
-      Serial.print("newdist is : "); Serial.println(newDist);
+      // Serial.print("forward dist is : "); Serial.println(forwardDist);
+      // Serial.print("newdist is : "); Serial.println(newDist);
       if (forwardDist > newDist)
       {
         deltaDist = 0;
@@ -222,6 +222,7 @@ void motor_control() {
 /*
    Setup and start codes for external interrupts and
    pullup resistors.
+
 */
 // Enable pull up resistors on pins 2 and 3
 void enablePullups()
@@ -355,7 +356,7 @@ void forward(float dist, float speed)
   dir = FORWARD;
 
   //  int left_val = pwmVal(speed);
-  int left_val = pwmVal(100), right_val = pwmVal(60);
+  int left_val = pwmVal(100), right_val = pwmVal(55);
 
   // For now we will ignore dist and move
   // forward indefinitely. We will fix this
@@ -365,8 +366,8 @@ void forward(float dist, float speed)
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
 
-  analogWrite(LF, left_val);
-  analogWrite(RF, right_val);
+  analogWrite(LF, 250);
+  analogWrite(RF, 140);
   analogWrite(LR, 0);
   analogWrite(RR, 0);
 }
@@ -413,7 +414,7 @@ unsigned long computeLeftDeltaTicks(float ang)
   //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
   //To convert to ticks, we multiply by COUNTS_PER_REV.
 
-  unsigned long ticks = (unsigned long)((ang * vincentCirc * LeftDeltaMultiplier) / (360.0 * WHEEL_CIRC));
+  unsigned long ticks = (unsigned long)((ang * vincentCirc * COUNTS_PER_REV * 0.3) / (360.0 * WHEEL_CIRC));
 
   return ticks;
 }
@@ -427,7 +428,7 @@ unsigned long computeRightDeltaTicks(float ang)
   //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
   //To convert to ticks, we multiply by COUNTS_PER_REV.
 
-  unsigned long ticks = (unsigned long)((ang * vincentCirc * RightDeltaMultiplier) / (360.0 * WHEEL_CIRC));
+  unsigned long ticks = (unsigned long)((ang * vincentCirc * COUNTS_PER_REV * 0.25) / (360.0 * WHEEL_CIRC));
 
   return ticks;
 }
@@ -450,14 +451,15 @@ void left(float ang, float speed)
 
   targetTicks = leftReverseTicksTurns + deltaTicks;
 
-  int val = pwmVal(speed);
+//  int val = pwmVal(speed);
+  int left_val = pwmVal(100), right_val = pwmVal(100);
 
   // For now we will ignore ang. We will fix this in Week 9.
   // We will also replace this code with bare-metal later.
   // To turn left we reverse the left wheel and move
   // the right wheel forward.
-  analogWrite(LR, val);
-  analogWrite(RF, val);
+  analogWrite(LR, 200);
+  analogWrite(RF, 200);
   analogWrite(LF, 0);
   analogWrite(RR, 0);
 }
@@ -480,14 +482,15 @@ void right(float ang, float speed)
 
   targetTicks = rightReverseTicksTurns + deltaTicks;
 
-  int val = pwmVal(speed);
+//  int val = pwmVal(speed);
+  int left_val = pwmVal(100), right_val = pwmVal(100);
 
   // For now we will ignore ang. We will fix this in Week 9.
   // We will also replace this code with bare-metal later.
   // To turn right we reverse the right wheel and move
   // the left wheel forward.
-  analogWrite(RR, val);
-  analogWrite(LF, val);
+  analogWrite(RR, 200);
+  analogWrite(LF, 200);
   analogWrite(LR, 0);
   analogWrite(RF, 0);
 }
@@ -527,6 +530,7 @@ void sendStatus() {
 
 /*
    Vincent's setup and run codes
+
 */
 
 // Clears all our counters
@@ -784,7 +788,7 @@ void cmdFromPi() {
     String temp = incomingByte.substring(0, 1);
     Serial.println(temp);
     cmd = temp;
-    if (temp == "S" || temp == "s" || temp == "G" || temp == "g" || temp == "M" || temp == "m" || temp == "<") {
+    if (temp == "S" || temp == "s" || temp == "G" || temp == "g" || temp == "M" || temp == "m" || temp == "<" || temp =="R" || temp =="L" || temp =="l" ||temp == "r"  ) {
       if (temp == "<") {
         backtrack = true;
       }
@@ -825,24 +829,15 @@ void comToAr() {
     } else if (cmd == "F" || cmd == "f") {
 
       //Serial.println("moving forward");
-      
+
       forward((float) dist, (float) speed);
 
     } else if (cmd == "B" || cmd == "b") {
       reverse((float) dist, (float) speed);
     } else if (cmd == "R" || cmd == "r") {
-      while(dist>=5){
-        right((float) 5, (float) speed);
-        dist = dist - 5;
-        delay(50);
-      }
+      right((float) 32, (float) speed);
     } else if (cmd == "L" || cmd == "l") {
-      while(dist>=5){
-        left((float) 5, (float) speed);
-        dist = dist - 5;
-        delay(50);
-      }      
-
+      left((float) 10 , (float) speed);
     } else if (cmd == "M" || cmd == "m") {
       stop();
       // blink LED
@@ -853,4 +848,3 @@ void comToAr() {
 
   }
 }
-
