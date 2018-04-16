@@ -366,8 +366,8 @@ void forward(float dist, float speed)
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
 
-  analogWrite(LF, 250);
-  analogWrite(RF, 140);
+  analogWrite(LF, 255);
+  analogWrite(RF, 135);
   analogWrite(LR, 0);
   analogWrite(RR, 0);
 }
@@ -458,8 +458,8 @@ void left(float ang, float speed)
   // We will also replace this code with bare-metal later.
   // To turn left we reverse the left wheel and move
   // the right wheel forward.
-  analogWrite(LR, 200);
-  analogWrite(RF, 200);
+  analogWrite(LR, 240);
+  analogWrite(RF, 240);
   analogWrite(LF, 0);
   analogWrite(RR, 0);
 }
@@ -489,8 +489,8 @@ void right(float ang, float speed)
   // We will also replace this code with bare-metal later.
   // To turn right we reverse the right wheel and move
   // the left wheel forward.
-  analogWrite(RR, 200);
-  analogWrite(LF, 200);
+  analogWrite(RR, 240);
+  analogWrite(LF, 240);
   analogWrite(LR, 0);
   analogWrite(RF, 0);
 }
@@ -700,6 +700,7 @@ void SDread() {
 
 }
 void SdLastPointer() {
+  Serial.println("ENTERE debug mode");
   int i = 0;
   int value = 0;
   byte readByte = 0;
@@ -715,6 +716,7 @@ void SdLastPointer() {
     dataFile.close();
   }
   while (value != 1000) {
+    Serial.println(pointer);
     int j = pointer;
     while (1) {
       if (completeData.charAt(j) == ',' || completeData.charAt(j) == '\n') {
@@ -730,8 +732,7 @@ void SdLastPointer() {
     pointer = pointer - 1;
   }
   pointer = pointer - 1;
-  //  Serial.print("pointer is: "); Serial.println(pointer);
-  //  Serial.print("value at pointer is: "); Serial.println(completeData.charAt(pointer));
+ Serial.print("value at pointer is: "); Serial.println(completeData.charAt(pointer));
 
 }
 void SDBack() {
@@ -835,9 +836,9 @@ void comToAr() {
     } else if (cmd == "B" || cmd == "b") {
       reverse((float) dist, (float) speed);
     } else if (cmd == "R" || cmd == "r") {
-      right((float) 32, (float) speed);
+      right((float) 31, (float) speed);
     } else if (cmd == "L" || cmd == "l") {
-      left((float) 10 , (float) speed);
+      left((float)  23 , (float) speed);
     } else if (cmd == "M" || cmd == "m") {
       stop();
       // blink LED
