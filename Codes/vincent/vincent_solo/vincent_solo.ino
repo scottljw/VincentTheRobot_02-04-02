@@ -54,6 +54,16 @@ volatile TDirection dir = STOP;
 #define VINCENT_LENGTH   16
 #define VINCENT_BREADTH  10
 
+// Ultrasound pins and constant
+#define ULTRASOUND_LEFT 4
+#define ULTRASOUND_RIGHT 7
+#define ULTRASOUNDTIMEOUT 30000
+#define LEFT 0
+#define RIGHT 1
+
+// IR pin
+#define INFRARED A3
+
 // Vincent's diagonal. We compute and store this once
 // since it is expensive to compute and really doesn't change.
 float vincentDiagonal = 0.0;
@@ -845,4 +855,80 @@ void comToAr() {
     flag = false;
 
   }
+}
+
+// Ultrasound
+double echo_left() {
+  double duration;
+  double distance;
+  
+  pinMode(ULTRASOUND_LEFT, OUTPUT);
+  digitalWrite(ULTRASOUND_LEFT, LOW);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_LEFT, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_LEFT, LOW);
+  
+  pinMode(ULTRASOUND_LEFT, INPUT);
+  duration = pulseIn(ULTRASOUND_LEFT, HIGH, ULTRASOUNDTIMEOUT);
+  distance = duration / 2.0 * 0.034;
+  
+  //Serial.print("\n\nDistance to the front wall: ");
+  //Serial.println(distance);
+  return distance;
+}
+
+double echo_right() {
+  double duration;
+  double distance;
+  
+  pinMode(ULTRASOUND_RIGHT, OUTPUT);
+  digitalWrite(ULTRASOUND_RIGHT, LOW);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_RIGHT, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_RIGHT, LOW);
+  
+  pinMode(ULTRASOUND_RIGHT, INPUT);
+  duration = pulseIn(ULTRASOUND_RIGHT, HIGH, ULTRASOUNDTIMEOUT);
+  distance = duration / 2.0 * 0.034;
+  
+  //Serial.print("\n\nDistance to the front wall: ");
+  //Serial.println(distance);
+  return distance;
+}
+
+double getDistanceFromUltrasound(int left_or_right) { // 0 = LEFT, 1 = RIGHT
+  int i = 0;
+  double sum = 0;
+  double distanceForEachIntervals = left_or_right? echo_left() : echo_right();
+  while (i < 10) {
+    sum += distanceForEachIntervals;
+    if (distanceForEachIntervals - (sum / (i + 1)) > 1.0 || distanceForEachIntervals - (sum / (i + 1)) < -1.0) {
+      i = 0;
+      sum = 0;
+      continue;
+    }
+    i++;
+  }
+  return sum / 10;
+}
+
+// Infrared
+int getDistanceFromIR() {
+  pinMode(INFRARED, INPUT);
+  int i = 0;
+  int reflection, sum = 0;
+  while (i < 10) {
+    reflection = digitalRead(INFRARED);
+    // Serial.println(reflection);
+    sum += reflection;
+    if (reflection - (sum / (i + 1)) > 100 || reflection - (sum / (i + 1)) < -100) {
+      i = 0;
+      sum = 0;
+      continue;
+    }
+    i++;
+  }
+  return sum / 10;
 }
