@@ -39,9 +39,9 @@ volatile TDirection dir = STOP;
 #define RR                  9   //11  // Right reverse pin
 
 // Motor calibration constants
-#define LeftDeltaMultiplier 60
-#define RightDeltaMultiplier 80
-#define LFMultiplier 2.4
+#define LeftDeltaMultiplier 0.60
+#define RightDeltaMultiplier 0.80
+#define LFMultiplier 2.45
 #define LRMultiplier 2.45
 
 /*
@@ -54,15 +54,15 @@ volatile TDirection dir = STOP;
 #define VINCENT_LENGTH   16
 #define VINCENT_BREADTH  10
 
+// IR pin
+#define INFRARED A3
+
 // Ultrasound pins and constant
 #define ULTRASOUND_LEFT 4
 #define ULTRASOUND_RIGHT 7
 #define ULTRASOUNDTIMEOUT 30000
 #define LEFT 0
 #define RIGHT 1
-
-// IR pin
-#define INFRARED A3
 
 // Vincent's diagonal. We compute and store this once
 // since it is expensive to compute and really doesn't change.
@@ -126,6 +126,7 @@ void setup() {
   //startSerial();
   //  setupMotors();
   //  startMotors();
+  setupIR();
   enablePullups();
   initializeState();
   sei();
@@ -171,13 +172,16 @@ void loop() {
 }
 
 
+//int ultrasound_counter =/ 0;
 void motor_control() {
   if (deltaDist > 0) {
     if (dir == FORWARD)
     {
-      Serial.print("forward dist is : "); Serial.println(forwardDist);
-      Serial.print("newdist is : "); Serial.println(newDist);
-      if (forwardDist > newDist)
+//      int ultrasound_counte/r;
+//      if (backtrack == true) /
+      // Serial.print("forward dist is : "); Serial.println(forwardDist);
+      // Serial.print("newdist is : "); Serial.println(newDist);
+      if (forwardDist > newDist || (backtrack == true && analogRead(INFRARED) < 500))
       {
         deltaDist = 0;
         newDist = 0;
@@ -329,6 +333,11 @@ void startSerial()
 
 }
 
+// Setup IR
+void setupIR() {
+  pinMode(INFRARED, INPUT);
+}
+
 // Convert percentages to PWM values
 int pwmVal(float speed)
 {
@@ -365,8 +374,17 @@ void forward(float dist, float speed)
 
   dir = FORWARD;
 
+  // fine tune with ultrasonic during backtracking
+  if (backtrack == true && getDistanceFromUltrasound(LEFT) < 500) {
+     analogWrite(LF, 255);
+     delay(100);
+  }
+  if (backtrack == true && getDistanceFromUltrasound(RIGHT) < 500) {
+     analogWrite(RF, 135);
+     delay(100);
+  }
   //  int left_val = pwmVal(speed);
-  int left_val = pwmVal(100), right_val = pwmVal(60);
+  int left_val = pwmVal(100), right_val = pwmVal(55);
 
   // For now we will ignore dist and move
   // forward indefinitely. We will fix this
@@ -376,8 +394,8 @@ void forward(float dist, float speed)
   // RF = Right forward pin, RR = Right reverse pin
   // This will be replaced later with bare-metal code.
 
-  analogWrite(LF, left_val);
-  analogWrite(RF, right_val);
+  analogWrite(LF, 255);
+  analogWrite(RF, 135);
   analogWrite(LR, 0);
   analogWrite(RR, 0);
 }
@@ -424,7 +442,7 @@ unsigned long computeLeftDeltaTicks(float ang)
   //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
   //To convert to ticks, we multiply by COUNTS_PER_REV.
 
-  unsigned long ticks = (unsigned long)((ang * vincentCirc * LeftDeltaMultiplier) / (360.0 * WHEEL_CIRC));
+  unsigned long ticks = (unsigned long)((ang * vincentCirc * COUNTS_PER_REV * 0.3) / (360.0 * WHEEL_CIRC));
 
   return ticks;
 }
@@ -438,7 +456,7 @@ unsigned long computeRightDeltaTicks(float ang)
   //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
   //To convert to ticks, we multiply by COUNTS_PER_REV.
 
-  unsigned long ticks = (unsigned long)((ang * vincentCirc * RightDeltaMultiplier) / (360.0 * WHEEL_CIRC));
+  unsigned long ticks = (unsigned long)((ang * vincentCirc * COUNTS_PER_REV * 0.25) / (360.0 * WHEEL_CIRC));
 
   return ticks;
 }
@@ -461,14 +479,15 @@ void left(float ang, float speed)
 
   targetTicks = leftReverseTicksTurns + deltaTicks;
 
-  int val = pwmVal(speed);
+//  int val = pwmVal(speed);
+  int left_val = pwmVal(100), right_val = pwmVal(100);
 
   // For now we will ignore ang. We will fix this in Week 9.
   // We will also replace this code with bare-metal later.
   // To turn left we reverse the left wheel and move
   // the right wheel forward.
-  analogWrite(LR, val);
-  analogWrite(RF, val);
+  analogWrite(LR, 240);
+  analogWrite(RF, 240);
   analogWrite(LF, 0);
   analogWrite(RR, 0);
 }
@@ -491,14 +510,15 @@ void right(float ang, float speed)
 
   targetTicks = rightReverseTicksTurns + deltaTicks;
 
-  int val = pwmVal(speed);
+//  int val = pwmVal(speed);
+  int left_val = pwmVal(100), right_val = pwmVal(100);
 
   // For now we will ignore ang. We will fix this in Week 9.
   // We will also replace this code with bare-metal later.
   // To turn right we reverse the right wheel and move
   // the left wheel forward.
-  analogWrite(RR, val);
-  analogWrite(LF, val);
+  analogWrite(RR, 240);
+  analogWrite(LF, 240);
   analogWrite(LR, 0);
   analogWrite(RF, 0);
 }
@@ -708,6 +728,7 @@ void SDread() {
 
 }
 void SdLastPointer() {
+  Serial.println("ENTERE debug mode");
   int i = 0;
   int value = 0;
   byte readByte = 0;
@@ -723,6 +744,7 @@ void SdLastPointer() {
     dataFile.close();
   }
   while (value != 1000) {
+    Serial.println(pointer);
     int j = pointer;
     while (1) {
       if (completeData.charAt(j) == ',' || completeData.charAt(j) == '\n') {
@@ -738,8 +760,7 @@ void SdLastPointer() {
     pointer = pointer - 1;
   }
   pointer = pointer - 1;
-  //  Serial.print("pointer is: "); Serial.println(pointer);
-  //  Serial.print("value at pointer is: "); Serial.println(completeData.charAt(pointer));
+ Serial.print("value at pointer is: "); Serial.println(completeData.charAt(pointer));
 
 }
 void SDBack() {
@@ -796,7 +817,7 @@ void cmdFromPi() {
     String temp = incomingByte.substring(0, 1);
     Serial.println(temp);
     cmd = temp;
-    if (temp == "S" || temp == "s" || temp == "G" || temp == "g" || temp == "M" || temp == "m" || temp == "<") {
+    if (temp == "S" || temp == "s" || temp == "G" || temp == "g" || temp == "M" || temp == "m" || temp == "<" || temp =="R" || temp =="L" || temp =="l" ||temp == "r"  ) {
       if (temp == "<") {
         backtrack = true;
       }
@@ -843,9 +864,9 @@ void comToAr() {
     } else if (cmd == "B" || cmd == "b") {
       reverse((float) dist, (float) speed);
     } else if (cmd == "R" || cmd == "r") {
-      right((float) dist, (float) speed);
+      right((float) 31, (float) speed);
     } else if (cmd == "L" || cmd == "l") {
-      left((float) dist, (float) speed);
+      left((float)  23 , (float) speed);
     } else if (cmd == "M" || cmd == "m") {
       stop();
       // blink LED
@@ -855,63 +876,6 @@ void comToAr() {
     flag = false;
 
   }
-}
-
-// Ultrasound
-double echo_left() {
-  double duration;
-  double distance;
-  
-  pinMode(ULTRASOUND_LEFT, OUTPUT);
-  digitalWrite(ULTRASOUND_LEFT, LOW);
-  delayMicroseconds(10);
-  digitalWrite(ULTRASOUND_LEFT, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(ULTRASOUND_LEFT, LOW);
-  
-  pinMode(ULTRASOUND_LEFT, INPUT);
-  duration = pulseIn(ULTRASOUND_LEFT, HIGH, ULTRASOUNDTIMEOUT);
-  distance = duration / 2.0 * 0.034;
-  
-  //Serial.print("\n\nDistance to the front wall: ");
-  //Serial.println(distance);
-  return distance;
-}
-
-double echo_right() {
-  double duration;
-  double distance;
-  
-  pinMode(ULTRASOUND_RIGHT, OUTPUT);
-  digitalWrite(ULTRASOUND_RIGHT, LOW);
-  delayMicroseconds(10);
-  digitalWrite(ULTRASOUND_RIGHT, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(ULTRASOUND_RIGHT, LOW);
-  
-  pinMode(ULTRASOUND_RIGHT, INPUT);
-  duration = pulseIn(ULTRASOUND_RIGHT, HIGH, ULTRASOUNDTIMEOUT);
-  distance = duration / 2.0 * 0.034;
-  
-  //Serial.print("\n\nDistance to the front wall: ");
-  //Serial.println(distance);
-  return distance;
-}
-
-double getDistanceFromUltrasound(int left_or_right) { // 0 = LEFT, 1 = RIGHT
-  int i = 0;
-  double sum = 0;
-  double distanceForEachIntervals = left_or_right? echo_left() : echo_right();
-  while (i < 10) {
-    sum += distanceForEachIntervals;
-    if (distanceForEachIntervals - (sum / (i + 1)) > 1.0 || distanceForEachIntervals - (sum / (i + 1)) < -1.0) {
-      i = 0;
-      sum = 0;
-      continue;
-    }
-    i++;
-  }
-  return sum / 10;
 }
 
 // Infrared
@@ -924,6 +888,63 @@ int getDistanceFromIR() {
     // Serial.println(reflection);
     sum += reflection;
     if (reflection - (sum / (i + 1)) > 100 || reflection - (sum / (i + 1)) < -100) {
+      i = 0;
+      sum = 0;
+      continue;
+    }
+    i++;
+  }
+  return sum / 10;
+}
+
+// Ultrasound
+double echo_left() {
+  double duration;
+  double distance;
+ 
+  pinMode(ULTRASOUND_LEFT, OUTPUT);
+  digitalWrite(ULTRASOUND_LEFT, LOW);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_LEFT, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_LEFT, LOW);
+ 
+  pinMode(ULTRASOUND_LEFT, INPUT);
+  duration = pulseIn(ULTRASOUND_LEFT, HIGH, ULTRASOUNDTIMEOUT);
+  distance = duration / 2.0 * 0.034;
+ 
+  //Serial.print("\n\nDistance to the front wall: ");
+  //Serial.println(distance);
+  return distance;
+}
+ 
+double echo_right() {
+  double duration;
+  double distance;
+ 
+  pinMode(ULTRASOUND_RIGHT, OUTPUT);
+  digitalWrite(ULTRASOUND_RIGHT, LOW);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_RIGHT, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_RIGHT, LOW);
+ 
+  pinMode(ULTRASOUND_RIGHT, INPUT);
+  duration = pulseIn(ULTRASOUND_RIGHT, HIGH, ULTRASOUNDTIMEOUT);
+  distance = duration / 2.0 * 0.034;
+ 
+  //Serial.print("\n\nDistance to the front wall: ");
+  //Serial.println(distance);
+  return distance;
+}
+ 
+double getDistanceFromUltrasound(int left_or_right) { // 0 = LEFT, 1 = RIGHT
+  int i = 0;
+  double sum = 0;
+  double distanceForEachIntervals = left_or_right? echo_left() : echo_right();
+  while (i < 10) {
+    sum += distanceForEachIntervals;
+    if (distanceForEachIntervals - (sum / (i + 1)) > 1.0 || distanceForEachIntervals - (sum / (i + 1)) < -1.0) {
       i = 0;
       sum = 0;
       continue;
