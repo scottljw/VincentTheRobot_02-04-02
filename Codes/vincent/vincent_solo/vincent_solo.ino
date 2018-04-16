@@ -54,6 +54,9 @@ volatile TDirection dir = STOP;
 #define VINCENT_LENGTH   16
 #define VINCENT_BREADTH  10
 
+// IR pin
+#define INFRARED A3
+
 // Vincent's diagonal. We compute and store this once
 // since it is expensive to compute and really doesn't change.
 float vincentDiagonal = 0.0;
@@ -167,7 +170,7 @@ void motor_control() {
     {
       // Serial.print("forward dist is : "); Serial.println(forwardDist);
       // Serial.print("newdist is : "); Serial.println(newDist);
-      if (forwardDist > newDist)
+      if (forwardDist > newDist || (backtrack == true && getDistanceFromIR() > 10))
       {
         deltaDist = 0;
         newDist = 0;
@@ -848,4 +851,23 @@ void comToAr() {
     flag = false;
 
   }
+}
+
+// Infrared
+int getDistanceFromIR() {
+  pinMode(INFRARED, INPUT);
+  int i = 0;
+  int reflection, sum = 0;
+  while (i < 10) {
+    reflection = digitalRead(INFRARED);
+    // Serial.println(reflection);
+    sum += reflection;
+    if (reflection - (sum / (i + 1)) > 100 || reflection - (sum / (i + 1)) < -100) {
+      i = 0;
+      sum = 0;
+      continue;
+    }
+    i++;
+  }
+  return sum / 10;
 }
