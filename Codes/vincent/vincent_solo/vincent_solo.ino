@@ -222,7 +222,6 @@ void motor_control() {
 /*
    Setup and start codes for external interrupts and
    pullup resistors.
-
 */
 // Enable pull up resistors on pins 2 and 3
 void enablePullups()
@@ -528,7 +527,6 @@ void sendStatus() {
 
 /*
    Vincent's setup and run codes
-
 */
 
 // Clears all our counters
@@ -827,15 +825,24 @@ void comToAr() {
     } else if (cmd == "F" || cmd == "f") {
 
       //Serial.println("moving forward");
-
+      
       forward((float) dist, (float) speed);
 
     } else if (cmd == "B" || cmd == "b") {
       reverse((float) dist, (float) speed);
     } else if (cmd == "R" || cmd == "r") {
-      right((float) dist, (float) speed);
+      while(dist>=5){
+        right((float) 5, (float) speed);
+        dist = dist - 5;
+        delay(50);
+      }
     } else if (cmd == "L" || cmd == "l") {
-      left((float) dist, (float) speed);
+      while(dist>=5){
+        left((float) 5, (float) speed);
+        dist = dist - 5;
+        delay(50);
+      }      
+
     } else if (cmd == "M" || cmd == "m") {
       stop();
       // blink LED
@@ -846,3 +853,4 @@ void comToAr() {
 
   }
 }
+
