@@ -119,6 +119,7 @@ void setup() {
   //startSerial();
   //  setupMotors();
   //  startMotors();
+  setupIR();
   enablePullups();
   initializeState();
   sei();
@@ -170,7 +171,7 @@ void motor_control() {
     {
       // Serial.print("forward dist is : "); Serial.println(forwardDist);
       // Serial.print("newdist is : "); Serial.println(newDist);
-      if (forwardDist > newDist || (backtrack == true && getDistanceFromIR() > 10))
+      if (forwardDist > newDist || (backtrack == true && analogRead(INFRARED) < 500))
       {
         deltaDist = 0;
         newDist = 0;
@@ -320,6 +321,11 @@ void startSerial()
   // Empty for now. To be replaced with bare-metal code
   // later on.
 
+}
+
+// Setup IR
+void setupIR() {
+  pinMode(INFRARED, INPUT);
 }
 
 // Convert percentages to PWM values
