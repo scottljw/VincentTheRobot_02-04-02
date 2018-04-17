@@ -153,6 +153,8 @@ void loop() {
     //  Serial.println(cmdNo);
     while (cmdNo != 1) {
       SDB();
+      if (cmd == 'B')
+      	blinkLED();
       if(cmd =='<' || cmd =='S' || cmd == 'G'){
         continue;
       }
@@ -823,7 +825,6 @@ void comToAr() {
       left((float)  23 , (float) speed);
     } else if (cmd == 'M' || cmd == 'm') {
       stop();
-      blinkLED();
     }
     // SDwrite(); // Save to file on SDCard
     // todo : mark, clr
