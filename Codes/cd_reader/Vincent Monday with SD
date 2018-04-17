@@ -339,7 +339,7 @@ void startSerial()
 
 // Setup IR
 void setupIR() {
-  pinMode(INFRARED, INPUT);
+	DDRC |= 0b00001000;
 }
 
 // Convert percentages to PWM values
@@ -546,15 +546,14 @@ void stop()
 
 // Blink the LED for 2 seconds
 void blinkLED() {
-	int count = 0;
-	while (count < 2) {
-		PINC |= 0b00000100;
-		delay(500);
-		PINC &= 0b11111011;
-		delay(500);
-		count++;
-	}
-	//PINC &= 0b00000000;
+  int count = 0;
+  while (count < 2) {
+    PINC |= 0b00001000;
+    delay(500);
+    PINC &= 0b11110111;
+    delay(500);
+    count++;
+  }
 }
 
 void sendStatus() {
