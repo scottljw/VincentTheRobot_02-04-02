@@ -110,6 +110,7 @@ bool backtrack = false;
 bool flag = false;
 bool cmdExecuted = false;
 int arr[35] = {0};
+bool ultrasound_checked = false;
 
 // setup() and loop()
 void setup() {
@@ -375,15 +376,17 @@ void forward(float dist, float speed)
   dir = FORWARD;
 
   // fine tune with ultrasonic during backtracking
-  if (backtrack == true && getDistanceFromUltrasound(ULT_LEFT) < 15) {
+  if (backtrack == true && ultrasound_checked == false && getDistanceFromUltrasound(ULT_LEFT) < 15) {
+     ultrasound_checked = true;
      stop();
-     Serial.println("bump right");
+     //Serial.println("bump right");
      analogWrite(RF, 135);
      delay(400);
   }
-  if (backtrack == true && getDistanceFromUltrasound(ULT_RIGHT) < 15 ) {
+  if (backtrack == true && ultrasound_checked == false && getDistanceFromUltrasound(ULT_RIGHT) < 15 ) {
+     ultrasound_checked = true;
      stop();
-     Serial.println("bump left");
+     //Serial.println("bump left");
      analogWrite(LF, 255);
      delay(400);
   }
@@ -794,9 +797,7 @@ void comToAr() {
     } else if (cmd == 'G' || cmd == 'g' ) {
       sendStatus();
     } else if (cmd == 'F' || cmd == 'f') {
-
-      //Serial.println("moving forward");
-
+      ultrasound_checked = false;
       forward((float) dist, (float) speed);
 
     } else if (cmd == 'B' || cmd == 'b') {
