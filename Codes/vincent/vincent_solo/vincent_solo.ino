@@ -885,6 +885,8 @@ void comToAr() {
       left((float)  23 , (float) speed);
     } else if (cmd == "M" || cmd == "m") {
       stop();
+      if (backtrack == true)
+      	blinkLED();
       // blink LED
     }
     // SDwrite(); // Save to file on SDCard
