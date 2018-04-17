@@ -11,8 +11,18 @@ phase 1: Tele-operated
 	- Store commands to "log.txt" on the SD card
 	- if (cmd == '<') start backtracking
 
+{
+	1. Come out the with the map using SLAM
+	2. Navigate and mark location using the map
+	3. Store the commands on SD card
+}
+yudi says:
+- We use the SLAM to map
+- Cpu limit
+- wheel encoder count ticks
+
 - Problem: Build a map representation of the environment and simultaneously localize the 	robot within that map:
-- SLAM: simultaneous localization and mapping
+- SLAM: simultaneous localization and mapping, "Landmarks are then extracted from the environment from the robots new position. The robot then attempts to associate these landmarks to observations of landmarks it previously has seen. Re-observed landmarks are then used to update the robots position in the EKF."
 - hector SLAM: compare and align the picture from current lidar data to previous 
 	- advantage: does not require odometry data
 
