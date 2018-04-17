@@ -55,8 +55,11 @@ volatile TDirection dir = STOP;
 #define VINCENT_LENGTH   16
 #define VINCENT_BREADTH  10
 
+// LED
+#define LED A3
+
 // IR pin
-#define INFRARED A3
+#define INFRARED A2
 
 // Ultrasound pins and constant
 #define ULTRASOUND_LEFT 4
@@ -378,15 +381,15 @@ void forward(float dist, float speed)
   // fine tune with ultrasonic during backtracking
   if (backtrack == true && ultrasound_checked == false && getDistanceFromUltrasound(ULT_LEFT) < 15) {
      ultrasound_checked = true;
-     stop();
-     //Serial.println("bump right");
+     // stop();
+     // Serial.println("bump right");
      analogWrite(RF, 135);
      delay(400);
   }
   if (backtrack == true && ultrasound_checked == false && getDistanceFromUltrasound(ULT_RIGHT) < 15 ) {
      ultrasound_checked = true;
-     stop();
-     //Serial.println("bump left");
+     // stop();
+     // Serial.println("bump left");
      analogWrite(LF, 255);
      delay(400);
   }
@@ -539,6 +542,19 @@ void stop()
   analogWrite(LR, 0);
   analogWrite(RF, 0);
   analogWrite(RR, 0);
+}
+
+// Blink the LED for 2 seconds
+void blinkLED() {
+	int count = 0;
+	while (counter < 2) {
+		PINC |= 0b00000100;
+		delay(500);
+		PINC &= 0b11111011;
+		delay(500);
+		count++;
+	}
+	//PINC &= 0b00000000;
 }
 
 void sendStatus() {
@@ -808,7 +824,7 @@ void comToAr() {
       left((float)  23 , (float) speed);
     } else if (cmd == 'M' || cmd == 'm') {
       stop();
-      // blink LED
+      blinkLED();
     }
     // SDwrite(); // Save to file on SDCard
     // todo : mark, clr

@@ -11,8 +11,9 @@ phase 1: Tele-operated
 	- Store commands to "log.txt" on the SD card
 	- if (cmd == '<') start backtracking
 
+- Problem: Build a map representation of the environment and simultaneously localize the 	robot within that map:
 - SLAM: simultaneous localization and mapping
-- hector SLAM: 
+- hector SLAM: compare and align the picture from current lidar data to previous 
 	- advantage: does not require odometry data
 
 phase 2: Autonomous backtracking
