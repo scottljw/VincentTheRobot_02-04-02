@@ -153,8 +153,10 @@ void loop() {
     //  Serial.println(cmdNo);
     while (cmdNo != 1) {
       SDB();
-      if (cmd == 'B')
+      if (cmd == 'M') {
       	blinkLED();
+      	continue;
+      }
       if(cmd =='<' || cmd =='S' || cmd == 'G'){
         continue;
       }
