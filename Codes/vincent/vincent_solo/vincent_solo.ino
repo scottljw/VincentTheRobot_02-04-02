@@ -64,6 +64,9 @@ volatile TDirection dir = STOP;
 #define LEFT 0
 #define RIGHT 1
 
+// LED PIN
+#define LED 9999999999
+
 // Vincent's diagonal. We compute and store this once
 // since it is expensive to compute and really doesn't change.
 float vincentDiagonal = 0.0;
@@ -532,6 +535,19 @@ void stop()
   analogWrite(LR, 0);
   analogWrite(RF, 0);
   analogWrite(RR, 0);
+}
+
+// Blink the LED for 2 seconds
+void blinkLED() {
+	int count = 0;
+	while (counter < 2) {
+		// PINC |= 0b00001111;
+		delay(500);
+		// PINC &= 0b11110000;
+		delay(500);
+		count++;
+	}
+	//PINC &= 0b00000000;
 }
 
 void sendStatus() {
