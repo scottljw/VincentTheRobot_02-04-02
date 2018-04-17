@@ -112,7 +112,7 @@ short k = 0;
 bool backtrack = false;
 bool flag = false;
 bool cmdExecuted = false;
-int arr[35] = {0};
+int arr[46] = {0};
 bool ultrasound_checked = false;
 
 // setup() and loop()
@@ -150,12 +150,28 @@ void loop() {
   {
     Serial.println("ENter backtrack");
     initializeState();
+    
+    int i=0;
+    
+    for (i=0;i<8;i++){
+     left((float)  30 , (float) 10);
+     delay(175);
+     stop();
+     delay(2000);
+
+     //Serial.print("fk");
+     // stop();
+     //delay(97);
+    }
+    
+   
+    delay(1000);
     //  Serial.println(cmdNo);
     while (cmdNo != 1) {
       SDB();
       if (cmd == 'M') {
-      	blinkLED();
-      	continue;
+        blinkLED();
+        continue;
       }
       if(cmd =='<' || cmd =='S' || cmd == 'G'){
         continue;
@@ -166,7 +182,7 @@ void loop() {
         motor_control();
         // delay(1000);
       }
-      delay(500);
+      delay(2000);
     }
     //  }
 
@@ -343,7 +359,7 @@ void startSerial()
 
 // Setup IR
 void setupIR() {
-	DDRC |= 0b00001000;
+  DDRC |= 0b00001000;
 }
 
 // Convert percentages to PWM values
@@ -383,12 +399,14 @@ void forward(float dist, float speed)
   dir = FORWARD;
 
   // fine tune with ultrasonic during backtracking
-  if (backtrack == true && ultrasound_checked == false && getDistanceFromUltrasound(ULT_LEFT) < 15) {
+/*  if (backtrack == true && ultrasound_checked == false && getDistanceFromUltrasound(ULT_LEFT) < 15) {
      ultrasound_checked = true;
      // stop();
      // Serial.println("bump right");
      analogWrite(RF, 135);
      delay(400);
+     forward((float) 5, (float) speed);
+     delay(200);
   }
   if (backtrack == true && ultrasound_checked == false && getDistanceFromUltrasound(ULT_RIGHT) < 15 ) {
      ultrasound_checked = true;
@@ -396,7 +414,9 @@ void forward(float dist, float speed)
      // Serial.println("bump left");
      analogWrite(LF, 255);
      delay(400);
-  }
+     forward((float) 10, (float) speed);
+     delay(200);
+  }*/
   //  int left_val = pwmVal(speed);
   int left_val = pwmVal(100), right_val = pwmVal(55);
 
@@ -409,7 +429,7 @@ void forward(float dist, float speed)
   // This will be replaced later with bare-metal code.
 
   analogWrite(LF, 255);
-  analogWrite(RF, 135);
+  analogWrite(RF, 130);
   analogWrite(LR, 0);
   analogWrite(RR, 0);
 }
@@ -817,14 +837,14 @@ void comToAr() {
       sendStatus();
     } else if (cmd == 'F' || cmd == 'f') {
       ultrasound_checked = false;
-      forward((float) dist, (float) speed);
+      forward((float) dist*0.9 , (float) speed);
 
     } else if (cmd == 'B' || cmd == 'b') {
       reverse((float) dist, (float) speed);
     } else if (cmd == 'R' || cmd == 'r') {
       right((float) 31, (float) speed);
     } else if (cmd == 'L' || cmd == 'l') {
-      left((float)  23 , (float) speed);
+      left((float)  26 , (float) speed);
     } else if (cmd == 'M' || cmd == 'm') {
       stop();
     }
