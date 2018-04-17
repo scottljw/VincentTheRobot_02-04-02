@@ -547,7 +547,7 @@ void stop()
 // Blink the LED for 2 seconds
 void blinkLED() {
 	int count = 0;
-	while (counter < 2) {
+	while (count < 2) {
 		PINC |= 0b00000100;
 		delay(500);
 		PINC &= 0b11111011;
