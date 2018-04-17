@@ -1,0 +1,22 @@
+Vincent Algorithm
+
+phase 1: Tele-operated
+- Start VNC viewer
+- Start Arduino IDE and Serial Monitor
+- Start hector slam 
+- Set CPU limit of hector slam and rviz to 80
+
+- Command Vincent to navigate through the maze according to the map shown on rviz
+	- Mark location
+	- Store commands to "log.txt" on the SD card
+	- if (cmd == '<') start backtracking
+
+- SLAM: simultaneous localization and mapping
+- hector SLAM: 
+	- advantage: does not require odometry data
+
+phase 2: Autonomous backtracking
+- Read from last line of "log.txt" to the first line of "log.txt" on the SD card
+
+	- Inverse all turning directions
+	- Play a cue at marked locations for 2 seconds
