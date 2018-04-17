@@ -375,16 +375,17 @@ void forward(float dist, float speed)
   dir = FORWARD;
 
   // fine tune with ultrasonic during backtracking
-  if (backtrack == true && getDistanceFromUltrasound(ULT_LEFT) < 10) {
+  if (backtrack == true && getDistanceFromUltrasound(ULT_LEFT) < 15) {
+     stop();
+     Serial.println("bump right");
+     analogWrite(RF, 135);
+     delay(400);
+  }
+  if (backtrack == true && getDistanceFromUltrasound(ULT_RIGHT) < 15 ) {
      stop();
      Serial.println("bump left");
-     analogWrite(RF, 255);
-     delay(1000);
-  }
-  if (backtrack == true && getDistanceFromUltrasound(ULT_RIGHT) < 10) {
-     stop();
-     analogWrite(LF, 135);
-     delay(1000);
+     analogWrite(LF, 255);
+     delay(400);
   }
   //  int left_val = pwmVal(speed);
   int left_val = pwmVal(100), right_val = pwmVal(55);
