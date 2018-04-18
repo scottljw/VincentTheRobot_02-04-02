@@ -1,0 +1,933 @@
+#include <Wire.h>
+#include <SD.h>
+#include <SPI.h>
+const int chipSelect = 8;
+#define FILE "log.txt"
+
+typedef enum
+{
+  STOP = 0,
+  FORWARD = 1,
+  BACKWARD = 2,
+  LEFT = 3,
+  RIGHT = 4
+} TDirection;
+volatile TDirection dir = STOP;
+
+/*
+   Vincent's configuration constants
+*/
+
+// Number of ticks per revolution from the
+// wheel encoder.
+
+#define COUNTS_PER_REV      195
+
+// Wheel circumference in cm.
+// We will use this to calculate forward/backward distance traveled
+// by taking revs * WHEEL_CIRC
+
+#define WHEEL_CIRC          20.42
+
+// Ultrasound pins
+// left is 4, right is 7
+
+// Motor control pins. You need to adjust these till
+// Vincent moves in the correct direction
+#define LF                  6   // Left forward pin
+#define LR                  5   // Left reverse pin
+#define RF                  A0  // Right forward pin
+#define RR                  9   //11  // Right reverse pin
+
+// Motor calibration constants
+#define LeftDeltaMultiplier 0.60
+#define RightDeltaMultiplier 0.80
+#define LFMultiplier 2.45
+#define LRMultiplier 2.45
+
+/*
+      Vincent's State Variables
+*/
+// PI, for calculating turn circumference
+#define PI 3.141592654
+
+// Vincent's length and breadth in cm
+#define VINCENT_LENGTH   16
+#define VINCENT_BREADTH  10
+
+// LED
+#define LED A3
+
+// IR pin
+#define INFRARED A2
+
+// Ultrasound pins and constant
+#define ULTRASOUND_LEFT 4
+#define ULTRASOUND_RIGHT 7
+#define ULTRASOUNDTIMEOUT 30000
+#define ULT_LEFT 0
+#define ULT_RIGHT 1
+
+// Vincent's diagonal. We compute and store this once
+// since it is expensive to compute and really doesn't change.
+float vincentDiagonal = 0.0;
+
+// Vincent's turning circumference, calculated once
+float vincentCirc = 0.0;
+
+
+// Store the ticks from Vincent's left and
+// right encoders for moving forward and backwards.
+volatile unsigned long leftForwardTicks;
+volatile unsigned long rightForwardTicks;
+//volatile unsigned long leftReverseTicks;
+//volatile unsigned long rightReverseTicks;
+
+// Left and right encoders ticks for turning
+volatile unsigned long leftForwardTicksTurns;
+volatile unsigned long rightForwardTicksTurns;
+volatile unsigned long leftReverseTicksTurns;
+volatile unsigned long rightReverseTicksTurns;
+
+// Store the revolutions on Vincent's left
+// and right wheels
+volatile unsigned long leftRevs;
+volatile unsigned long rightRevs;
+
+// Forward and backward distance traveled
+volatile unsigned long forwardDist;
+//volatile unsigned long reverseDist;
+
+// Variables to keep track of whether we have moved a commanded distance
+unsigned long deltaDist;
+unsigned long newDist;
+unsigned long deltaTicks;
+unsigned long targetTicks;
+
+// Variables to control motors
+char cmd ;
+int dist = 0, speed = 0;
+int cmdNo = 0;
+short k = 0;
+bool backtrack = false;
+bool flag = false;
+bool cmdExecuted = false;
+int arr[85] = {0};
+bool ultrasound_checked = false;
+
+// setup() and loop()
+void setup() {
+  Serial.begin(9600);
+  // put your setup code here, to run once:
+  vincentDiagonal = sqrt((VINCENT_LENGTH * VINCENT_LENGTH) + (VINCENT_BREADTH * VINCENT_BREADTH));
+  vincentCirc = PI * vincentDiagonal;
+
+  cli();
+  setupEINT();
+  //setupSerial();
+  //startSerial();
+  //  setupMotors();
+  //  startMotors();
+  setupIR();
+  enablePullups();
+  initializeState();
+  sei();
+  SDinit();
+  flag = true;
+  SDwrite();
+  flag = false;
+}
+
+void loop() {
+  //  cmdFromPi();
+  //  comToAr();
+  if (backtrack == false) {
+    cmdFromPi();
+    SDwrite();
+    comToAr();
+    motor_control();
+  } else // backtrack == true
+  {
+    Serial.println("ENter backtrack");
+    initializeState();
+    
+    int i=0;
+    
+    for (i=0;i<6;i++){
+     left((float)  50 , (float) 10);
+     delay(200);
+     stop();
+     delay(2000);
+
+     //Serial.print("fk");
+     // stop();
+     //delay(97);
+    }
+    
+   
+    delay(1000);
+    //  Serial.println(cmdNo);
+    while (cmdNo != 1) {
+      SDB();
+      if (cmd == 'M') {
+        blinkLED();
+        continue;
+      }
+      if(cmd =='<' || cmd =='S' || cmd == 'G'){
+        continue;
+      }
+      comToAr();
+      cmdExecuted = false;
+      while (cmdExecuted == false) {
+        motor_control();
+        // delay(1000);
+      }
+      delay(2000);
+    }
+    //  }
+
+    if (cmdNo == 1) {
+      Serial.println("FINISH");
+      stop();
+      delay(1000000);
+    }
+    //      delay(1000);
+  }
+}
+
+
+//int ultrasound_counter =/ 0;
+void motor_control() {
+  if (deltaDist > 0) {
+    if (dir == FORWARD)
+    {
+//      int ultrasound_counte/r;
+//      if (backtrack == true) /
+      // Serial.print("forward dist is : "); Serial.println(forwardDist);
+      // Serial.print("newdist is : "); Serial.println(newDist);
+      if (forwardDist > newDist)// || (backtrack == true && analogRead(INFRARED) < 500))
+      {
+        deltaDist = 0;
+        newDist = 0;
+        stop();
+        cmdExecuted = true;
+      }
+    }
+//    else if (dir == BACKWARD)
+//    {
+//      if (reverseDist > newDist)
+//      {
+//        deltaDist = 0;
+//        newDist = 0;
+//        stop();
+//        cmdExecuted = true;
+//      }
+//    }
+    else if (dir == STOP)
+    {
+      deltaDist = 0;
+      newDist = 0;
+      stop();
+      cmdExecuted = true;
+    }
+  }
+
+  if (deltaTicks > 0)
+  {
+    if (dir == LEFT) {
+      if (leftReverseTicksTurns >= targetTicks) {
+        deltaTicks = 0;
+        targetTicks = 0;
+        stop();
+        cmdExecuted = true;
+      }
+    } else if (dir == RIGHT) {
+      if (rightReverseTicksTurns >= targetTicks) {
+        deltaTicks = 0;
+        targetTicks = 0;
+        stop();
+        cmdExecuted = true;
+      }
+    }
+    else if (dir == STOP)
+    {
+      deltaTicks = 0;
+      targetTicks = 0;
+      stop();
+      cmdExecuted = true;
+    }
+  }
+}
+/*
+   Setup and start codes for external interrupts and
+   pullup resistors.
+
+*/
+// Enable pull up resistors on pins 2 and 3
+void enablePullups()
+{
+  // Use bare-metal to enable the pull-up resistors on pins
+  // 2 and 3. These are pins PD2 and PD3 respectively.
+  // We set bits 2 and 3 in DDRD to 0 to make them inputs.
+  DDRD &= 0b11110011;
+  PIND |= 0b00001100;
+}
+
+// Functions to be called by INT0 and INT1 ISRs.
+// we assume that when dir is FORWARD and dir is BACKWARD the number of clicks
+// by the left and right encoders is similar, and we update forwardDist and reverseDist
+// only in leftISR, and not in rightISR
+void leftISR()
+{
+  //  leftForwardTicks++;
+  if (dir == FORWARD) {
+    leftForwardTicks = leftForwardTicks + 1;
+    forwardDist = (unsigned long) ((float) leftForwardTicks / COUNTS_PER_REV * WHEEL_CIRC);
+  }
+//  else if (dir == BACKWARD) {
+//    leftReverseTicks = leftReverseTicks + 1;
+//    reverseDist = (unsigned long) ((float) leftReverseTicks / COUNTS_PER_REV * WHEEL_CIRC);
+//  }
+  else if (dir == LEFT)
+    leftReverseTicksTurns = leftReverseTicksTurns + 1;
+  else if (dir == RIGHT)
+    leftForwardTicksTurns = leftForwardTicksTurns + 1;
+
+
+  //  Serial.print("LEFT: ");
+  //  Serial.println((float) leftTicks / COUNTS_PER_REV * WHEEL_CIRC);
+}
+
+void rightISR()
+{
+  //  /rightForwardTicks++;
+  if (dir == FORWARD)
+    rightForwardTicks = rightForwardTicks + 1;
+//  else if (dir == BACKWARD)
+//    rightReverseTicks = rightReverseTicks + 1;
+  else if (dir == LEFT)
+    rightForwardTicksTurns = rightForwardTicksTurns + 1;
+  else if (dir == RIGHT)
+    rightReverseTicksTurns = rightReverseTicksTurns + 1;
+
+  // Serial.print("RIGHT: ");
+  // Serial.println((float) rightTicks / COUNTS_PER_REV * WHEEL_CIRC);
+}
+
+// Set up the external interrupt pins INT0 and INT1
+// for falling edge triggered. Use bare-metal.
+void setupEINT()
+{
+  // Use bare-metal to configure pins 2 and 3 to be
+  // falling edge triggered. Remember to enable
+  // the INT0 and INT1 interrupts.
+  cli();
+  EICRA |= 0b00001010;
+  EIMSK |= 0b00000011;
+  sei();
+}
+
+// Implement the external interrupt ISRs below.
+// INT0 ISR should call leftISR while INT1 ISR
+// should call rightISR.
+ISR(INT0_vect) {
+  leftISR();
+}
+
+ISR(INT1_vect) {
+  rightISR();
+}
+
+// Set up the serial connection. For now we are using
+// Arduino Wiring, you will replace this later
+// with bare-metal code.
+void setupSerial()
+{
+  // To replace later with bare-metal.
+  //  Serial.begin(9600); // alr called in loop
+}
+
+// Start the serial connection. For now we are using
+// Arduino wiring and this function is empty. We will
+// replace this later with bare-metal code.
+
+void startSerial()
+{
+  // Empty for now. To be replaced with bare-metal code
+  // later on.
+
+}
+
+// Setup IR
+void setupIR() {
+  DDRC |= 0b00001000;
+}
+
+// Convert percentages to PWM values
+int pwmVal(float speed)
+{
+  if (speed < 0.0)
+    speed = 0;
+
+  if (speed > 100.0)
+    speed = 100.0;
+
+  return (int) ((speed / 100.0) * 255.0);
+}
+
+// Move Vincent forward "dist" cm at speed "speed".
+// "speed" is expressed as a percentage. E.g. 50 is
+// move forward at half speed.
+// Specifying a distance of 0 means Vincent will
+// continue moving forward indefinitely.
+
+void forward(float dist, float speed)
+{
+  //Serial.println("this is forward function");
+  //    Serial.print("dist: ");
+  //  Serial.print(dist);
+  //  Serial.print(",");
+  //  Serial.print("speed: ");
+  //  Serial.println(speed);
+  // Code to tell us how far to move
+  if (dist == 0)
+    deltaDist = 999999;
+  else
+    deltaDist = dist;
+
+  newDist = forwardDist + deltaDist;
+
+  dir = FORWARD;
+
+  // fine tune with ultrasonic during backtracking
+/*  if (backtrack == true && ultrasound_checked == false && getDistanceFromUltrasound(ULT_LEFT) < 15) {
+     ultrasound_checked = true;
+     // stop();
+     // Serial.println("bump right");
+     analogWrite(RF, 135);
+     delay(400);
+     forward((float) 5, (float) speed);
+     delay(200);
+  }
+  if (backtrack == true && ultrasound_checked == false && getDistanceFromUltrasound(ULT_RIGHT) < 15 ) {
+     ultrasound_checked = true;
+     // stop();
+     // Serial.println("bump left");
+     analogWrite(LF, 255);
+     delay(400);
+     forward((float) 10, (float) speed);
+     delay(200);
+  }*/
+  //  int left_val = pwmVal(speed);
+  int left_val = pwmVal(100), right_val = pwmVal(55);
+
+  // For now we will ignore dist and move
+  // forward indefinitely. We will fix this
+  // in Week 9.
+
+  // LF = Left forward pin, LR = Left reverse pin
+  // RF = Right forward pin, RR = Right reverse pin
+  // This will be replaced later with bare-metal code.
+
+  analogWrite(LF, 255);
+  analogWrite(RF, 130);
+  analogWrite(LR, 0);
+  analogWrite(RR, 0);
+}
+
+// Reverse Vincent "dist" cm at speed "speed".
+// "speed" is expressed as a percentage. E.g. 50 is
+// reverse at half speed.
+// Specifying a distance of 0 means Vincent will
+// continue reversing indefinitely.
+
+//void reverse(float dist, float speed)
+//{
+//  // code to tell us how har to move
+//  if (dist == 0)
+//    deltaDist = 999999;
+//  else
+//    deltaDist = dist;
+//
+//  newDist = reverseDist + deltaDist;
+//
+//  dir = BACKWARD;
+//
+//  //  int val = pwmVal(speed);
+//  int left_val = pwmVal(60), right_val = pwmVal(90);
+//
+//  // For now we will ignore dist and
+//  // reverse indefinitely. We will fix this
+//  // in Week 9.
+//
+//  // LF = Left forward pin, LR = Left reverse pin
+//  // RF = Right forward pin, RR = Right reverse pin
+//  // This will be replaced later with bare-metal code.
+//  analogWrite(LR, left_val);
+//  analogWrite(RR, right_val);
+//  analogWrite(LF, 0);
+//  analogWrite(RF, 0);
+//}
+
+unsigned long computeLeftDeltaTicks(float ang)
+{
+  //we will assume that angular distance moved = linear distance moved in one wheel
+  //revolution. This is probably incorrect but simplifies calculation.
+  //# of wheel revs to make one full 360 turn is vincentCirc / WHEEL_CIRC
+  //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
+  //To convert to ticks, we multiply by COUNTS_PER_REV.
+
+  unsigned long ticks = (unsigned long)((ang * vincentCirc * COUNTS_PER_REV * 0.3) / (360.0 * WHEEL_CIRC));
+
+  return ticks;
+}
+
+
+unsigned long computeRightDeltaTicks(float ang)
+{
+  //we will assume that angular distance moved = linear distance moved in one wheel
+  //revolution. This is probably incorrect but simplifies calculation.
+  //# of wheel revs to make one full 360 turn is vincentCirc / WHEEL_CIRC
+  //This is for 360 degrees. For ang drgrees it will be (ang * vincentCirc)/(360* WHEEL_CIRC)
+  //To convert to ticks, we multiply by COUNTS_PER_REV.
+
+  unsigned long ticks = (unsigned long)((ang * vincentCirc * COUNTS_PER_REV * 0.25) / (360.0 * WHEEL_CIRC));
+
+  return ticks;
+}
+
+// Turn Vincent left "ang" degrees at speed "speed".
+// "speed" is expressed as a percentage. E.g. 50 is
+// turn left at half speed.
+// Specifying an angle of 0 degrees will cause Vincent to
+// turn left indefinitely.
+void left(float ang, float speed)
+{
+  dir = LEFT;
+
+  if (ang == 0)
+    deltaTicks = 9999999;
+  else
+  {
+    deltaTicks = computeLeftDeltaTicks(ang);
+  }
+
+  targetTicks = leftReverseTicksTurns + deltaTicks;
+
+//  int val = pwmVal(speed);
+  int left_val = pwmVal(100), right_val = pwmVal(100);
+
+  // For now we will ignore ang. We will fix this in Week 9.
+  // We will also replace this code with bare-metal later.
+  // To turn left we reverse the left wheel and move
+  // the right wheel forward.
+  analogWrite(LR, 240);
+  analogWrite(RF, 240);
+  analogWrite(LF, 0);
+  analogWrite(RR, 0);
+}
+
+// Turn Vincent right "ang" degrees at speed "speed".
+// "speed" is expressed as a percentage. E.g. 50 is
+// turn left at half speed.
+// Specifying an angle of 0 degrees will cause Vincent to
+// turn right indefinitely.
+void right(float ang, float speed)
+{
+  dir = RIGHT;
+
+  if (ang == 0)
+    deltaTicks = 9999999;
+  else
+  {
+    deltaTicks = computeRightDeltaTicks(ang);
+  }
+
+  targetTicks = rightReverseTicksTurns + deltaTicks;
+
+//  int val = pwmVal(speed);
+  int left_val = pwmVal(100), right_val = pwmVal(100);
+
+  // For now we will ignore ang. We will fix this in Week 9.
+  // We will also replace this code with bare-metal later.
+  // To turn right we reverse the right wheel and move
+  // the left wheel forward.
+  analogWrite(RR, 240);
+  analogWrite(LF, 240);
+  analogWrite(LR, 0);
+  analogWrite(RF, 0);
+}
+
+// Stop Vincent. To replace with bare-metal code later.
+void stop()
+{
+  dir = STOP;
+
+  analogWrite(LF, 0);
+  analogWrite(LR, 0);
+  analogWrite(RF, 0);
+  analogWrite(RR, 0);
+}
+
+// Blink the LED for 2 seconds
+void blinkLED() {
+  int count = 0;
+  while (count < 2) {
+    PINC |= 0b00001000;
+    delay(500);
+    PINC &= 0b11110111;
+    delay(500);
+    count++;
+  }
+}
+
+void sendStatus() {
+  // Implement code to send back a packet containing key
+  // information like leftTicks, rightTicks, leftRevs, rightRevs
+  // forwardDist and reverseDist
+  // Use the params array to store this information, and set the
+  // packetType and command files accordingly, then use sendResponse
+  // to send out the packet. See sendMessage on how to use sendResponse.
+  //
+  Serial.println("------- VINCENT STATUS REPORT -------\n");
+  Serial.print("Left Forward Ticks:\t\t"); Serial.println(leftForwardTicks);
+  Serial.print("Right Forward Ticks:\t\t"); Serial.println(rightForwardTicks);
+//  Serial.print("Left Reverse Ticks:\t\t"); Serial.println(leftReverseTicks);
+//  Serial.print("Right Reverse Ticks:\t\t"); Serial.println(rightReverseTicks);
+  Serial.print("Left Forward Ticks Turns:\t"); Serial.println(leftForwardTicksTurns);
+  Serial.print("Right Forward Ticks Turns:\t"); Serial.println(rightForwardTicksTurns);
+  Serial.print("Left Reverse Ticks Turns:\t"); Serial.println(leftReverseTicksTurns);
+  Serial.print("Right Reverse Ticks Turns:\t"); Serial.println(rightReverseTicksTurns);
+  Serial.print("Forward Distance:\t\t"); Serial.println(forwardDist);
+//  Serial.print("Reverse Distance:\t\t"); Serial.println(reverseDist);
+  Serial.println("\n---------------------------------------\n");
+}
+
+/*
+   Vincent's setup and run codes
+
+*/
+
+// Clears all our counters
+void clearCounters()
+{
+  leftForwardTicks = 0;
+  rightForwardTicks = 0;
+//  leftReverseTicks = 0;
+//  rightReverseTicks = 0;
+  leftForwardTicksTurns = 0;
+  rightForwardTicksTurns = 0;
+  leftReverseTicksTurns = 0;
+  rightReverseTicksTurns = 0;
+
+  leftRevs = 0;
+  rightRevs = 0;
+  forwardDist = 0;
+//  reverseDist = 0;
+}
+
+// Clears one particular counter
+void clearOneCounter(int which)
+{
+  clearCounters();
+}
+// Intialize Vincet's internal states
+
+void initializeState()
+{
+  clearCounters();
+}
+
+// SDcard
+void SDinit() {
+  if (!SD.begin(chipSelect)) {
+    Serial.println("Init failed, or not present");
+    return;
+  }
+  Serial.println("Card initialised.");
+  File dataFile = SD.open(FILE, FILE_WRITE);
+  if (SD.exists(FILE)) {
+    // Delete existing file
+    Serial.print(FILE);
+    Serial.println(" exists, deleting");
+    SD.remove(FILE);
+    Serial.println();
+  }
+  else
+  {
+    Serial.print(FILE);
+    Serial.println(" not found!");
+  }
+  dataFile.close();
+}
+
+void SDB(){
+  flag = true;
+   int i=0;
+  int value =0;
+   byte readByte = 0;
+   int num2;
+  String completeData = "";
+  File dataFile = SD.open(FILE, FILE_READ);
+  Serial.print("position is");Serial.println(arr[cmdNo-1]);
+  dataFile.seek(arr[cmdNo-1]);
+     if (dataFile){   
+        // File available, read file until no data available
+          readByte = dataFile.read();
+          while((char)readByte != '\n'){
+            completeData += (char)readByte;
+            readByte = dataFile.read();
+          }
+          completeData += (char)readByte;
+          Serial.print("this is complete data");Serial.println(completeData);
+        dataFile.close();
+     }
+     k=0;
+     while(i !=4){
+      String temp;
+      int j=k;
+      while(1){
+        if(completeData.charAt(j) == ',' || completeData.charAt(j) == '\n'){
+          break;
+        }
+        j = 1 + j;
+      }
+      temp = completeData.substring(k,j);
+      value = temp.toInt();
+          if(i == 0){
+            cmdNo = (int)value;
+          }
+          if(i == 1){
+            num2 = value;
+          }
+          if(i == 2){
+            dist = value;
+          }
+          if(i == 3){
+            speed = (int)value;
+          }
+          i = 1 + i;
+          k = j + 1;
+     }
+     
+     cmd = intToCom(num2) ;
+     Serial.print(cmdNo);
+     Serial.print(", ");
+     Serial.print(cmd);
+    Serial.print(",");
+     Serial.print(dist);
+    Serial.print(",");
+     Serial.println(speed); 
+}
+
+void SDwrite() {
+  if (flag == false) {
+    return;
+  }
+  int temp = comToInt();
+  File dataFile = SD.open(FILE, FILE_WRITE);
+  if(dataFile){
+    Serial.println("file read");
+  }
+  Serial.println(dataFile.position());
+  arr[cmdNo] = (int)dataFile.position();
+    Serial.print("cmd is:");Serial.println(cmdNo);
+  Serial.print("the position is:");Serial.println(arr[cmdNo]);
+  dataFile.print(cmdNo);
+  dataFile.print(",");
+  dataFile.print(temp);
+  dataFile.print(",");
+  dataFile.print(dist);
+  dataFile.print(",");
+  dataFile.print(speed);
+  dataFile.print("\n");
+  dataFile.close();
+  cmdNo = cmdNo + 1;
+  //Serial.print("Seconds is :");
+  //Serial.println(cmdNo);
+}
+
+int comToInt() {
+  if (cmd == 's' || cmd == 'S') {
+    return 1;
+  } else if (cmd == 'F' || cmd == 'f') {
+    return 2;
+//  } else if (cmd == 'B' || cmd == 'b') {
+//    return 3;
+  } else if (cmd == 'R' || cmd == 'r') {
+    return 4;
+  } else if (cmd == 'L' || cmd == 'l') {
+    return 5;
+  } else if (cmd == '<') {
+    return 1000;
+  } else if (cmd == 'M' || cmd == 'm') {
+    return 1001;
+  } else if(cmd == 'G' || cmd == 'g'){
+    return 1002;
+  }
+}
+
+char intToCom(int cmd_int) {
+  if (cmd_int == 1) {
+    return 'S';
+  } else if (cmd_int == 2) {
+    return 'F';
+//  } else if (cmd_int == 3) {
+//    return 'B';
+  } else if (cmd_int == 4) { // swap L and R
+    return 'L';
+  } else if (cmd_int == 5) {
+    return 'R';
+  } else if (cmd_int == 1000) {
+    return '<';
+  } else if (cmd_int == 1001) {
+    return 'M';
+  } else if (cmd_int == 1002){
+    return 'G';
+  }
+
+}
+
+
+
+void cmdFromPi() {
+  if (Serial.available() > 0) {
+    flag = true;
+    // read the incoming byte:
+    String incomingByte = Serial.readString();
+    String temp = incomingByte.substring(0, 1);
+    Serial.println(temp);
+    cmd = temp[0];
+    if (temp == "S" || temp == "s" || temp == "G" || temp == "g" || temp == "M" || temp == "m" || temp == "<" || temp =="R" || temp =="L" || temp =="l" ||temp == "r"  ) {
+      if (temp == "<") {
+        backtrack = true;
+      }
+      return;
+    }
+    int j = 2, k = 2;
+    for (int i = 0; i < 2; i++) {
+      while (1) {
+        if (incomingByte.charAt(j) == ',') {
+          break;
+        }
+        j = 1 + j;
+      }
+      temp = incomingByte.substring(k, j);
+      int num = temp.toInt();
+      if (i == 0) {
+        dist = num;
+      } else if (i == 1) {
+        speed = num;
+      }
+
+      j = j + 1;
+      k = j;
+    }
+    Serial.println(dist);
+    Serial.println(speed);
+
+    //Serial.println(incomingByte);
+  }
+}
+
+void comToAr() {
+  if (flag == true) { //  && backtrack == false
+    if (cmd == 's' || cmd == 'S') {
+      stop();
+    } else if (cmd == 'G' || cmd == 'g' ) {
+      sendStatus();
+    } else if (cmd == 'F' || cmd == 'f') {
+      ultrasound_checked = false;
+      forward((float) dist*0.9 , (float) speed);
+
+//    } else if (cmd == 'B' || cmd == 'b') {
+//      reverse((float) dist, (float) speed);
+    } else if (cmd == 'R' || cmd == 'r') {
+      right((float) 31, (float) speed);
+    } else if (cmd == 'L' || cmd == 'l') {
+      left((float)  26 , (float) speed);
+    } else if (cmd == 'M' || cmd == 'm') {
+      stop();
+    }
+    // SDwrite(); // Save to file on SDCard
+    // todo : mark, clr
+    flag = false;
+
+  }
+}
+
+// Infrared
+int getDistanceFromIR() {
+  pinMode(INFRARED, INPUT);
+  int i = 0;
+  int reflection, sum = 0;
+  while (i < 10) {
+    reflection = digitalRead(INFRARED);
+    // Serial.println(reflection);
+    sum += reflection;
+    if (reflection - (sum / (i + 1)) > 100 || reflection - (sum / (i + 1)) < -100) {
+      i = 0;
+      sum = 0;
+      continue;
+    }
+    i++;
+  }
+  return sum / 10;
+}
+
+// Ultrasound
+double echo_left() {
+  double duration;
+  double distance;
+ 
+  pinMode(ULTRASOUND_LEFT, OUTPUT);
+  digitalWrite(ULTRASOUND_LEFT, LOW);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_LEFT, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_LEFT, LOW);
+ 
+  pinMode(ULTRASOUND_LEFT, INPUT);
+  duration = pulseIn(ULTRASOUND_LEFT, HIGH, ULTRASOUNDTIMEOUT);
+  distance = duration / 2.0 * 0.034;
+ 
+  //Serial.print("\n\nDistance to the front wall: ");
+  //Serial.println(distance);
+  return distance;
+}
+ 
+double echo_right() {
+  double duration;
+  double distance;
+ 
+  pinMode(ULTRASOUND_RIGHT, OUTPUT);
+  digitalWrite(ULTRASOUND_RIGHT, LOW);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_RIGHT, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASOUND_RIGHT, LOW);
+ 
+  pinMode(ULTRASOUND_RIGHT, INPUT);
+  duration = pulseIn(ULTRASOUND_RIGHT, HIGH, ULTRASOUNDTIMEOUT);
+  distance = duration / 2.0 * 0.034;
+ 
+  //Serial.print("\n\nDistance to the front wall: ");
+  //Serial.println(distance);
+  return distance;
+}
+ 
+double getDistanceFromUltrasound(int left_or_right) { // 0 = LEFT, 1 = RIGHT
+  int i = 0;
+  double sum = 0;
+  double distanceForEachIntervals = left_or_right? echo_left() : echo_right();
+  while (i < 10) {
+    sum += distanceForEachIntervals;
+    if (distanceForEachIntervals - (sum / (i + 1)) > 1.0 || distanceForEachIntervals - (sum / (i + 1)) < -1.0) {
+      i = 0;
+      sum = 0;
+      continue;
+    }
+    i++;
+  }
+  return sum / 10;
+}
