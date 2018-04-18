@@ -113,6 +113,7 @@ bool backtrack = false;
 bool flag = false;
 bool cmdExecuted = false;
 int arr[85] = {0};
+int cmdEND = 0;
 bool ultrasound_checked = false;
 
 // setup() and loop()
@@ -150,7 +151,7 @@ void loop() {
   {
     Serial.println("ENter backtrack");
     initializeState();
-    
+    cmdNo = cmdEND;
     int i=0;
     
     for (i=0;i<6;i++){
@@ -729,6 +730,9 @@ void SDwrite() {
   if(dataFile){
     Serial.println("file read");
   }
+  if(temp ==1003){
+    cmdEND = cmdNo; 
+  }
   Serial.println(dataFile.position());
   arr[cmdNo] = (int)dataFile.position();
     Serial.print("cmd is:");Serial.println(cmdNo);
@@ -764,6 +768,8 @@ int comToInt() {
     return 1001;
   } else if(cmd == 'G' || cmd == 'g'){
     return 1002;
+  } else if(cmd == 'E' || cmd == 'e'){
+    return 1003;
   }
 }
 
@@ -784,6 +790,8 @@ char intToCom(int cmd_int) {
     return 'M';
   } else if (cmd_int == 1002){
     return 'G';
+  } else if(cmd_int == 1003){
+    return 'E';
   }
 
 }
