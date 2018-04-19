@@ -1,11 +1,8 @@
-# VincentTheRobot_group02-04-02
-### CG1112 Project
+# Vincent the Robot (to Rescue)
 
 __Status of Progress:__
-The project specifications are out.
-We should start to explore some useful contents and finish the design first.
 
-Link for the shared folder @ Google Drive: https://drive.google.com/open?id=1UU1Qphcf9j1svSrQOfUQ39ML7el3dNKC
+This project is finished.
 
 ----------
 
